@@ -1,43 +1,18 @@
-use std::{
-    env::{self, VarError},
-    fs,
-    path::Path,
-};
-
 use color_eyre::Result;
 use crossterm::event::{self, Event, KeyCode};
 use ratatui::{
     layout::{Constraint, Direction, Layout},
     style::{Color, Modifier, Style, Stylize},
-    text::{Line, Text},
+    text::Line,
     widgets::{Block, Borders, List, ListItem, ListState, Paragraph},
     DefaultTerminal,
 };
 
-// TODO: use me
-#[derive(Clone)]
-struct File {
-    display_name: String,
-    full_path: String,
-}
+mod env;
+use env::env::get_home_dir;
 
-impl ToString for File {
-    fn to_string(&self) -> String {
-        self.display_name.to_string()
-    }
-}
-
-impl From<File> for String {
-    fn from(value: File) -> String {
-        value.display_name
-    }
-}
-
-impl From<File> for Text<'_> {
-    fn from(value: File) -> Self {
-        Text::raw(value.display_name)
-    }
-}
+mod file;
+use file::file::{get_files_for_dir, get_parent_dir, is_path_directory, File};
 
 struct ApplicationState {
     files: Vec<File>,
@@ -59,8 +34,13 @@ fn main() -> Result<()> {
     result
 }
 
+// BUG: when navigating inside an empty directory and going back for example, nothing is selected
+// and trying to use get_selected() on our list state will panic because we expect
+// what about wrapper function that always ensures there is something selected?
+
 fn run(mut terminal: DefaultTerminal) -> Result<()> {
-    let initial_directory = get_home_dir()?;
+    // TODO: fall back to something sane
+    let initial_directory = get_home_dir().expect("$HOME is set");
 
     // setup application state
     let mut application_state = ApplicationState {
@@ -116,10 +96,10 @@ fn run(mut terminal: DefaultTerminal) -> Result<()> {
             let selected_files_list_item: Vec<ListItem> = application_state
                 .selected_files
                 .iter()
-                .map(|selected_file| ListItem::new(selected_file.to_string()))
+                .map(|selected_file| ListItem::new(selected_file.full_path.clone()))
                 .collect();
 
-            let selected_files_block = Block::new().title("Selected Files").borders(Borders::all());
+            let selected_files_block = Block::new().title("Selected files").borders(Borders::all());
             let selected_files_list_widget =
                 List::new(selected_files_list_item).block(selected_files_block);
             frame.render_widget(selected_files_list_widget, root_outer_layout[1]);
@@ -189,66 +169,12 @@ fn toggle_selected_file(selected_files: &Vec<File>, selected_file: &File) -> Vec
             .collect();
         files_vec_without_selected_file.to_vec()
     } else {
-        vec![]
-        // let new_selected_files = vec![selected_file]
-        //     .iter()
-        //     .chain(selected_files)
-        //     .map(|x| x.clone())
-        //     .collect();
-        // new_selected_files
+        let new_thing: Vec<File> = vec![selected_file.clone()];
+        let new_selected_files = new_thing
+            .iter()
+            .chain(selected_files)
+            .map(|x| x.clone())
+            .collect();
+        new_selected_files
     }
-}
-
-fn get_home_dir() -> Result<String, VarError> {
-    let home_env_var_result = env::var("HOME");
-    home_env_var_result
-}
-
-fn get_files_for_dir(dir: &String) -> Vec<File> {
-    let read_dir_result = fs::read_dir(dir).expect("Can read from dir");
-
-    let files: Vec<File> = read_dir_result
-        .into_iter()
-        .map(|file| {
-            // i have a feeling this is not the way to go
-            let dir_entry = file.expect("can unwrap file");
-            let full_path = dir_entry.path().to_string_lossy().to_string();
-            let splitted: Vec<&str> = full_path.split("/").collect();
-            let (last, _) = splitted
-                .split_last()
-                .expect("Should be able to split to get relative path");
-
-            let display_name = if Path::new(&full_path).is_dir() {
-                last.to_string() + "/"
-            } else {
-                last.to_string()
-            };
-
-            return File {
-                display_name,
-                full_path,
-            };
-        })
-        .collect();
-    return files;
-}
-
-// TODO: Write unit tests for this function
-fn get_parent_dir(current_path: &String) -> String {
-    let splitted_path: Vec<&str> = current_path.split("/").collect();
-    let split_last_result = splitted_path.split_last();
-    return match split_last_result {
-        None => current_path.to_string(),
-        Some(result) => {
-            let (_, elements) = result;
-            if elements.len() == 1 && elements[0] == "" {
-                return String::from("/");
-            }
-            return elements.join("/");
-        }
-    };
-}
-
-fn is_path_directory(path: &String) -> bool {
-    Path::new(path).is_dir()
 }
