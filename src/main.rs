@@ -12,7 +12,10 @@ mod env;
 use env::env::get_home_dir;
 
 mod file;
-use file::file::{get_files_for_dir, get_parent_dir, is_path_directory, File};
+use file::file::{
+    get_files_for_dir, get_parent_dir, is_path_directory, sort_file_paths_dirs_first_then_files,
+    File,
+};
 
 struct ApplicationState {
     files: Vec<File>,
@@ -42,9 +45,12 @@ fn run(mut terminal: DefaultTerminal) -> Result<()> {
     // TODO: fall back to something sane
     let initial_directory = get_home_dir().expect("$HOME is set");
 
+    let initial_files = get_files_for_dir(&initial_directory);
+    let sorted_initial_files = sort_file_paths_dirs_first_then_files(&initial_files);
+
     // setup application state
     let mut application_state = ApplicationState {
-        files: get_files_for_dir(&initial_directory),
+        files: sorted_initial_files,
         selected_files: vec![],
         current_directory: initial_directory,
     };
@@ -130,8 +136,9 @@ fn run(mut terminal: DefaultTerminal) -> Result<()> {
                 KeyCode::Char('h') => {
                     application_state.current_directory =
                         get_parent_dir(&application_state.current_directory);
-                    application_state.files =
-                        get_files_for_dir(&application_state.current_directory);
+                    application_state.files = sort_file_paths_dirs_first_then_files(
+                        &get_files_for_dir(&application_state.current_directory),
+                    );
                 }
                 KeyCode::Char('l') | KeyCode::Enter => {
                     // TODO: duplicated twice. if thrice, create function
@@ -143,8 +150,9 @@ fn run(mut terminal: DefaultTerminal) -> Result<()> {
 
                     if is_path_directory(&selected_file.full_path) {
                         application_state.current_directory = selected_file.full_path.to_string();
-                        application_state.files =
-                            get_files_for_dir(&application_state.current_directory);
+                        application_state.files = sort_file_paths_dirs_first_then_files(
+                            &get_files_for_dir(&application_state.current_directory),
+                        );
                     }
                 }
                 _ => {}
@@ -173,7 +181,7 @@ fn toggle_selected_file(selected_files: &Vec<File>, selected_file: &File) -> Vec
         let new_selected_files = new_thing
             .iter()
             .chain(selected_files)
-            .map(|x| x.clone())
+            .map(|file| file.clone())
             .collect();
         new_selected_files
     }

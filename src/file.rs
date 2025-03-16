@@ -1,5 +1,5 @@
 pub mod file {
-    use std::{fs, path::Path};
+    use std::{cmp::Ordering, fs, path::Path};
 
     use ratatui::text::Text;
 
@@ -7,7 +7,48 @@ pub mod file {
     pub struct File {
         pub display_name: String,
         pub full_path: String,
+        pub is_dir: bool,
     }
+
+    impl Ord for File {
+        fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+            let self_starts_with_dot = self.display_name.starts_with(".");
+            let other_starts_with_dot = other.display_name.starts_with(".");
+
+            if self_starts_with_dot && other_starts_with_dot {
+                return self
+                    .display_name
+                    .to_lowercase()
+                    .cmp(&other.display_name.to_lowercase());
+            }
+
+            if self_starts_with_dot {
+                return Ordering::Greater;
+            }
+
+            if other_starts_with_dot {
+                return Ordering::Less;
+            }
+
+            self.display_name
+                .to_lowercase()
+                .cmp(&other.display_name.to_lowercase())
+        }
+    }
+
+    impl PartialOrd for File {
+        fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+            Some(self.cmp(other))
+        }
+    }
+
+    impl PartialEq for File {
+        fn eq(&self, other: &Self) -> bool {
+            self.display_name.to_lowercase() == other.display_name.to_lowercase()
+        }
+    }
+
+    impl Eq for File {}
 
     impl ToString for File {
         fn to_string(&self) -> String {
@@ -33,7 +74,6 @@ pub mod file {
         let files: Vec<File> = read_dir_result
             .into_iter()
             .map(|file| {
-                // i have a feeling this is not the way to go
                 let dir_entry = file.expect("can unwrap file");
                 let full_path = dir_entry.path().to_string_lossy().to_string();
                 let splitted: Vec<&str> = full_path.split("/").collect();
@@ -41,7 +81,9 @@ pub mod file {
                     .split_last()
                     .expect("Should be able to split to get relative path");
 
-                let display_name = if Path::new(&full_path).is_dir() {
+                let is_dir = is_path_directory(&full_path);
+
+                let display_name = if is_dir {
                     last.to_string() + "/"
                 } else {
                     last.to_string()
@@ -50,6 +92,7 @@ pub mod file {
                 return File {
                     display_name,
                     full_path,
+                    is_dir,
                 };
             })
             .collect();
@@ -74,5 +117,19 @@ pub mod file {
 
     pub fn is_path_directory(path: &String) -> bool {
         Path::new(path).is_dir()
+    }
+
+    pub fn sort_file_paths_dirs_first_then_files(files: &Vec<File>) -> Vec<File> {
+        let dirs: Vec<File> = files
+            .iter()
+            .filter(|file| file.is_dir)
+            .map(|file| file.clone())
+            .collect();
+        let files: Vec<&File> = files.iter().filter(|file| !file.is_dir).collect();
+
+        let mut everything_together: Vec<File> =
+            dirs.iter().chain(files).map(|file| file.clone()).collect();
+        everything_together.sort();
+        return everything_together;
     }
 }
