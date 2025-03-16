@@ -205,9 +205,9 @@ fn get_home_dir() -> Result<String, VarError> {
 }
 
 fn get_files_for_dir(dir: &String) -> Vec<File> {
-    let files = fs::read_dir(dir).expect("Can read from dir");
+    let read_dir_result = fs::read_dir(dir).expect("Can read from dir");
 
-    let file_items: Vec<File> = files
+    let files: Vec<File> = read_dir_result
         .into_iter()
         .map(|file| {
             // i have a feeling this is not the way to go
@@ -218,13 +218,19 @@ fn get_files_for_dir(dir: &String) -> Vec<File> {
                 .split_last()
                 .expect("Should be able to split to get relative path");
 
+            let display_name = if Path::new(&full_path).is_dir() {
+                last.to_string() + "/"
+            } else {
+                last.to_string()
+            };
+
             return File {
-                display_name: last.to_string(),
+                display_name,
                 full_path,
             };
         })
         .collect();
-    return file_items;
+    return files;
 }
 
 // TODO: Write unit tests for this function
