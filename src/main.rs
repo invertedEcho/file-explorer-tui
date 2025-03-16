@@ -1,17 +1,30 @@
 use std::{
     env::{self, VarError},
     fs,
+    path::Path,
 };
 
-use color_eyre::{eyre::Ok, Result};
+use color_eyre::Result;
 use crossterm::event::{self, Event, KeyCode};
 use ratatui::{
     layout::{Constraint, Direction, Layout},
     style::{Color, Modifier, Style, Stylize},
     text::Line,
-    widgets::{block::title, Block, Borders, List, ListItem, ListState, Paragraph},
+    widgets::{Block, Borders, List, ListItem, ListState, Paragraph},
     DefaultTerminal,
 };
+
+struct ApplicationState {
+    files: Vec<String>,
+    selected_files: Vec<String>,
+    current_directory: String,
+}
+
+// TODO: use me
+struct File {
+    display_name: String,
+    full_path: String,
+}
 
 const SELECTED_STYLE: Style = Style::new()
     .add_modifier(Modifier::BOLD)
@@ -28,27 +41,19 @@ fn main() -> Result<()> {
 }
 
 fn run(mut terminal: DefaultTerminal) -> Result<()> {
-    let home_dir = get_home_dir()?;
-    let mut current_dir = home_dir;
+    let initial_directory = get_home_dir()?;
 
-    let file_items = get_files_as_list_item_vec_from_dir(&current_dir);
+    // setup application state
+    let mut application_state = ApplicationState {
+        files: get_file_paths_from_dir(&initial_directory),
+        selected_files: vec![],
+        current_directory: initial_directory,
+    };
 
     let files_block = Block::new()
         .title("Files")
         .borders(Borders::all())
         .border_style(Style::new().light_green());
-    let files_list_widget_with_block = List::new(file_items.clone())
-        .block(files_block)
-        .highlight_style(SELECTED_STYLE)
-        .highlight_symbol(">");
-
-    let current_dir_block = Block::new()
-        .title("Current directory")
-        .borders(Borders::all())
-        .border_style(Style::new().light_green())
-        .title_top(Line::from("h Parent Dir").right_aligned())
-        .title_top(Line::from("l Go into Dir").right_aligned());
-    let current_directory_paragraph = Paragraph::new(current_dir).block(current_dir_block);
 
     let mut file_list_state = ListState::default();
     file_list_state.select(Some(0));
@@ -56,11 +61,25 @@ fn run(mut terminal: DefaultTerminal) -> Result<()> {
     // TODO: fix variable name
     let mut active_filters_strings: Vec<String> = vec![];
 
-    let mut selected_files_strings: Vec<String> = vec![];
-
     loop {
         terminal.draw(|frame| {
             let area = frame.area();
+
+            // These two things are not ideal as they will be computed every frame draw ):
+            let current_dir_block = Block::new()
+                .title("Current directory")
+                .borders(Borders::all())
+                .border_style(Style::new().light_green())
+                .title_top(Line::from("h Parent Dir").right_aligned())
+                .title_top(Line::from("l Go into Dir").right_aligned());
+            let current_directory_paragraph =
+                Paragraph::new(application_state.current_directory.clone())
+                    .block(current_dir_block);
+
+            let files_list_widget_with_block = List::new(application_state.files.clone())
+                .block(files_block.clone())
+                .highlight_style(SELECTED_STYLE)
+                .highlight_symbol(">");
 
             let root_outer_layout = Layout::default()
                 .direction(Direction::Horizontal)
@@ -78,13 +97,15 @@ fn run(mut terminal: DefaultTerminal) -> Result<()> {
                 &mut file_list_state,
             );
 
-            let selected_files: Vec<ListItem> = selected_files_strings
+            let selected_files_list_item: Vec<ListItem> = application_state
+                .selected_files
                 .iter()
                 .map(|selected_file| ListItem::new(selected_file.to_string()))
                 .collect();
 
             let selected_files_block = Block::new().title("Selected Files").borders(Borders::all());
-            let selected_files_list_widget = List::new(selected_files).block(selected_files_block);
+            let selected_files_list_widget =
+                List::new(selected_files_list_item).block(selected_files_block);
             frame.render_widget(selected_files_list_widget, root_outer_layout[1]);
 
             frame.render_widget(&current_directory_paragraph, inner_left_layout[0]);
@@ -105,17 +126,35 @@ fn run(mut terminal: DefaultTerminal) -> Result<()> {
                 }
                 KeyCode::Char(' ') => {
                     let selected_file_index = file_list_state.selected();
-                    let selected_file = file_items
+                    let selected_file = application_state
+                        .files
                         .get(selected_file_index.expect("there should be a selected file"))
                         .expect("the selected file should exist");
 
                     let new_selected_files =
-                        toggle_selected_file(&selected_files_strings, selected_file);
-                    selected_files_strings = new_selected_files;
+                        toggle_selected_file(&application_state.selected_files, selected_file);
+                    application_state.selected_files = new_selected_files;
                 }
-                // KeyCode::Char('h') => {
-                //     current_dir =
-                // }
+                KeyCode::Char('h') => {
+                    application_state.current_directory =
+                        get_parent_dir(&application_state.current_directory);
+                    application_state.files =
+                        get_file_paths_from_dir(&application_state.current_directory);
+                }
+                KeyCode::Char('l') | KeyCode::Enter => {
+                    // TODO: duplicated twice. if thrice, create function
+                    let selected_file_index = file_list_state.selected();
+                    let selected_file = application_state
+                        .files
+                        .get(selected_file_index.expect("there should be a selected file"))
+                        .expect("the selected file should exist");
+
+                    if is_path_directory(selected_file) {
+                        application_state.current_directory = selected_file.to_string();
+                        application_state.files =
+                            get_file_paths_from_dir(&application_state.current_directory);
+                    }
+                }
                 _ => {}
             }
         }
@@ -150,9 +189,7 @@ fn get_home_dir() -> Result<String, VarError> {
     home_env_var_result
 }
 
-// TODO: split up into two functions
-// or even better use From trait to say how our DirEntry is converted to a ListItem
-fn get_files_as_list_item_vec_from_dir(dir: &String) -> Vec<String> {
+fn get_file_paths_from_dir(dir: &String) -> Vec<String> {
     let files = fs::read_dir(dir).expect("Can read from dir");
 
     let file_items: Vec<String> = files
@@ -170,8 +207,23 @@ fn get_files_as_list_item_vec_from_dir(dir: &String) -> Vec<String> {
         .collect();
     return file_items;
 }
-//
-// fn go_parent_dir(current_path: &String) {
-//     let splitted_path: Vec<&String> = current_path.split_last()
-//     let parent_path = splitted_path[0..splitted_path.len() - 1];
-// }
+
+// TODO: Write unit tests for this function
+fn get_parent_dir(current_path: &String) -> String {
+    let splitted_path: Vec<&str> = current_path.split("/").collect();
+    let split_last_result = splitted_path.split_last();
+    return match split_last_result {
+        None => current_path.to_string(),
+        Some(result) => {
+            let (_, elements) = result;
+            if elements.len() == 1 && elements[0] == "" {
+                return String::from("/");
+            }
+            return elements.join("/");
+        }
+    };
+}
+
+fn is_path_directory(path: &String) -> bool {
+    Path::new(path).is_dir()
+}
