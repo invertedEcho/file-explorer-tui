@@ -8,7 +8,8 @@ use crossterm::event::{self, Event, KeyCode};
 use ratatui::{
     layout::{Constraint, Direction, Layout},
     style::{Color, Modifier, Style, Stylize},
-    widgets::{Block, Borders, List, ListItem, ListState},
+    text::Line,
+    widgets::{block::title, Block, Borders, List, ListItem, ListState, Paragraph},
     DefaultTerminal,
 };
 
@@ -41,6 +42,14 @@ fn run(mut terminal: DefaultTerminal) -> Result<()> {
         .highlight_style(SELECTED_STYLE)
         .highlight_symbol(">");
 
+    let current_dir_block = Block::new()
+        .title("Current directory")
+        .borders(Borders::all())
+        .border_style(Style::new().light_green())
+        .title_top(Line::from("h Parent Dir").right_aligned())
+        .title_top(Line::from("l Go into Dir").right_aligned());
+    let current_directory_paragraph = Paragraph::new(current_dir).block(current_dir_block);
+
     let mut file_list_state = ListState::default();
     file_list_state.select(Some(0));
 
@@ -60,7 +69,7 @@ fn run(mut terminal: DefaultTerminal) -> Result<()> {
 
             let inner_left_layout = Layout::default()
                 .direction(Direction::Vertical)
-                .constraints(vec![Constraint::Percentage(20), Constraint::Percentage(80)])
+                .constraints(vec![Constraint::Percentage(5), Constraint::Percentage(95)])
                 .split(root_outer_layout[0]);
 
             frame.render_stateful_widget(
@@ -78,17 +87,7 @@ fn run(mut terminal: DefaultTerminal) -> Result<()> {
             let selected_files_list_widget = List::new(selected_files).block(selected_files_block);
             frame.render_widget(selected_files_list_widget, root_outer_layout[1]);
 
-            // frame.render_widget(&selected_files_block, root_outer_layout[1]);
-
-            let active_filters: Vec<ListItem> = active_filters_strings
-                .iter()
-                .map(|active_filter| ListItem::new(active_filter.to_string()))
-                .collect();
-
-            // why is there no way to make a horizontal list
-            let active_filters_widget =
-                List::new(active_filters).block(Block::bordered().title("Active Filters"));
-            frame.render_widget(&active_filters_widget, inner_left_layout[0]);
+            frame.render_widget(&current_directory_paragraph, inner_left_layout[0]);
         })?;
 
         if let Event::Key(key) = event::read()? {
@@ -114,6 +113,9 @@ fn run(mut terminal: DefaultTerminal) -> Result<()> {
                         toggle_selected_file(&selected_files_strings, selected_file);
                     selected_files_strings = new_selected_files;
                 }
+                // KeyCode::Char('h') => {
+                //     current_dir =
+                // }
                 _ => {}
             }
         }
@@ -168,3 +170,8 @@ fn get_files_as_list_item_vec_from_dir(dir: &String) -> Vec<String> {
         .collect();
     return file_items;
 }
+//
+// fn go_parent_dir(current_path: &String) {
+//     let splitted_path: Vec<&String> = current_path.split_last()
+//     let parent_path = splitted_path[0..splitted_path.len() - 1];
+// }
