@@ -9,21 +9,40 @@ use crossterm::event::{self, Event, KeyCode};
 use ratatui::{
     layout::{Constraint, Direction, Layout},
     style::{Color, Modifier, Style, Stylize},
-    text::Line,
+    text::{Line, Text},
     widgets::{Block, Borders, List, ListItem, ListState, Paragraph},
     DefaultTerminal,
 };
 
-struct ApplicationState {
-    files: Vec<String>,
-    selected_files: Vec<String>,
-    current_directory: String,
-}
-
 // TODO: use me
+#[derive(Clone)]
 struct File {
     display_name: String,
     full_path: String,
+}
+
+impl ToString for File {
+    fn to_string(&self) -> String {
+        self.display_name.to_string()
+    }
+}
+
+impl From<File> for String {
+    fn from(value: File) -> String {
+        value.display_name
+    }
+}
+
+impl From<File> for Text<'_> {
+    fn from(value: File) -> Self {
+        Text::raw(value.display_name)
+    }
+}
+
+struct ApplicationState {
+    files: Vec<File>,
+    selected_files: Vec<File>,
+    current_directory: String,
 }
 
 const SELECTED_STYLE: Style = Style::new()
@@ -45,7 +64,7 @@ fn run(mut terminal: DefaultTerminal) -> Result<()> {
 
     // setup application state
     let mut application_state = ApplicationState {
-        files: get_file_paths_from_dir(&initial_directory),
+        files: get_files_for_dir(&initial_directory),
         selected_files: vec![],
         current_directory: initial_directory,
     };
@@ -57,9 +76,6 @@ fn run(mut terminal: DefaultTerminal) -> Result<()> {
 
     let mut file_list_state = ListState::default();
     file_list_state.select(Some(0));
-
-    // TODO: fix variable name
-    let mut active_filters_strings: Vec<String> = vec![];
 
     loop {
         terminal.draw(|frame| {
@@ -120,10 +136,6 @@ fn run(mut terminal: DefaultTerminal) -> Result<()> {
                 KeyCode::Char('k') => {
                     file_list_state.select_previous();
                 }
-                KeyCode::Char('D') => {
-                    active_filters_strings
-                        .insert(active_filters_strings.len(), String::from("Directories"));
-                }
                 KeyCode::Char(' ') => {
                     let selected_file_index = file_list_state.selected();
                     let selected_file = application_state
@@ -139,7 +151,7 @@ fn run(mut terminal: DefaultTerminal) -> Result<()> {
                     application_state.current_directory =
                         get_parent_dir(&application_state.current_directory);
                     application_state.files =
-                        get_file_paths_from_dir(&application_state.current_directory);
+                        get_files_for_dir(&application_state.current_directory);
                 }
                 KeyCode::Char('l') | KeyCode::Enter => {
                     // TODO: duplicated twice. if thrice, create function
@@ -149,10 +161,10 @@ fn run(mut terminal: DefaultTerminal) -> Result<()> {
                         .get(selected_file_index.expect("there should be a selected file"))
                         .expect("the selected file should exist");
 
-                    if is_path_directory(selected_file) {
-                        application_state.current_directory = selected_file.to_string();
+                    if is_path_directory(&selected_file.full_path) {
+                        application_state.current_directory = selected_file.full_path.to_string();
                         application_state.files =
-                            get_file_paths_from_dir(&application_state.current_directory);
+                            get_files_for_dir(&application_state.current_directory);
                     }
                 }
                 _ => {}
@@ -165,22 +177,25 @@ fn run(mut terminal: DefaultTerminal) -> Result<()> {
 /// This function checks if the newly selected file already exists in the existing selected files.
 /// If yes, it will be removed. Otherwise it will be added.
 /// Creates a new vec with new Strings
-fn toggle_selected_file(selected_files: &Vec<String>, selected_file: &String) -> Vec<String> {
-    let file_exists = selected_files.iter().any(|file| file == selected_file);
+fn toggle_selected_file(selected_files: &Vec<File>, selected_file: &File) -> Vec<File> {
+    let file_exists = selected_files
+        .iter()
+        .any(|file| file.full_path == selected_file.full_path);
     if file_exists {
-        let files_vec_without_selected_file: Vec<String> = selected_files
+        let files_vec_without_selected_file: Vec<File> = selected_files
             .iter()
-            .filter(|file| *file != selected_file)
-            .map(|file| file.to_string())
+            .filter(|file| *file.full_path != selected_file.full_path)
+            .map(|file| file.clone())
             .collect();
         files_vec_without_selected_file.to_vec()
     } else {
-        let new_selected_files = vec![selected_file.to_string()]
-            .iter()
-            .chain(selected_files)
-            .map(|x| x.clone())
-            .collect();
-        new_selected_files
+        vec![]
+        // let new_selected_files = vec![selected_file]
+        //     .iter()
+        //     .chain(selected_files)
+        //     .map(|x| x.clone())
+        //     .collect();
+        // new_selected_files
     }
 }
 
@@ -189,20 +204,24 @@ fn get_home_dir() -> Result<String, VarError> {
     home_env_var_result
 }
 
-fn get_file_paths_from_dir(dir: &String) -> Vec<String> {
+fn get_files_for_dir(dir: &String) -> Vec<File> {
     let files = fs::read_dir(dir).expect("Can read from dir");
 
-    let file_items: Vec<String> = files
+    let file_items: Vec<File> = files
         .into_iter()
         .map(|file| {
             // i have a feeling this is not the way to go
-            let filename = file
-                .expect("can unwrap file")
-                .path()
-                .to_str()
-                .expect("can get path as str")
-                .to_string();
-            return filename;
+            let dir_entry = file.expect("can unwrap file");
+            let full_path = dir_entry.path().to_string_lossy().to_string();
+            let splitted: Vec<&str> = full_path.split("/").collect();
+            let (last, _) = splitted
+                .split_last()
+                .expect("Should be able to split to get relative path");
+
+            return File {
+                display_name: last.to_string(),
+                full_path,
+            };
         })
         .collect();
     return file_items;
