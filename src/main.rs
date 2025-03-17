@@ -21,6 +21,13 @@ struct ApplicationState {
     files: Vec<File>,
     selected_files: Vec<File>,
     current_directory: String,
+    current_pane: Pane,
+}
+
+#[derive(PartialEq, Debug)]
+enum Pane {
+    Files,
+    SelectedFiles,
 }
 
 const SELECTED_STYLE: Style = Style::new()
@@ -41,6 +48,8 @@ fn main() -> Result<()> {
 // and trying to use get_selected() on our list state will panic because we expect
 // what about wrapper function that always ensures there is something selected?
 
+// BUG: using the tui with different fonts yield different layout sizes etc...
+
 fn run(mut terminal: DefaultTerminal) -> Result<()> {
     // TODO: fall back to something sane
     let initial_directory = get_home_dir().expect("$HOME is set");
@@ -53,27 +62,36 @@ fn run(mut terminal: DefaultTerminal) -> Result<()> {
         files: sorted_initial_files,
         selected_files: vec![],
         current_directory: initial_directory,
+        current_pane: Pane::Files,
     };
-
-    let files_block = Block::new()
-        .title("Files")
-        .borders(Borders::all())
-        .border_style(Style::new().light_green());
 
     let mut file_list_state = ListState::default();
     file_list_state.select(Some(0));
 
+    let mut selected_files_state = ListState::default();
+
+    // TODO: check whether its okay that the widgets are reconstructed each iteration
     loop {
         terminal.draw(|frame| {
             let area = frame.area();
 
-            // These two things are not ideal as they will be computed every frame draw ):
+            let files_block_border_style = if application_state.current_pane == Pane::Files {
+                Style::new().light_green()
+            } else {
+                Style::new()
+            };
+            let files_block = Block::new()
+                .title("Files [1]")
+                .borders(Borders::all())
+                .border_style(files_block_border_style);
+
             let current_dir_block = Block::new()
                 .title("Current directory")
                 .borders(Borders::all())
                 .border_style(Style::new().light_green())
-                .title_top(Line::from("h Parent Dir").right_aligned())
-                .title_top(Line::from("l Go into Dir").right_aligned());
+                .title_top(Line::from("[h or -] -> Parent Dir").right_aligned())
+                .title_top(Line::from("[l or Enter] -> Go into Dir").right_aligned());
+
             let current_directory_paragraph =
                 Paragraph::new(application_state.current_directory.clone())
                     .block(current_dir_block);
@@ -90,7 +108,7 @@ fn run(mut terminal: DefaultTerminal) -> Result<()> {
 
             let inner_left_layout = Layout::default()
                 .direction(Direction::Vertical)
-                .constraints(vec![Constraint::Percentage(5), Constraint::Percentage(95)])
+                .constraints(vec![Constraint::Percentage(7), Constraint::Percentage(93)])
                 .split(root_outer_layout[0]);
 
             frame.render_stateful_widget(
@@ -105,10 +123,27 @@ fn run(mut terminal: DefaultTerminal) -> Result<()> {
                 .map(|selected_file| ListItem::new(selected_file.full_path.clone()))
                 .collect();
 
-            let selected_files_block = Block::new().title("Selected files").borders(Borders::all());
-            let selected_files_list_widget =
-                List::new(selected_files_list_item).block(selected_files_block);
-            frame.render_widget(selected_files_list_widget, root_outer_layout[1]);
+            let selected_files_block_style =
+                if application_state.current_pane == Pane::SelectedFiles {
+                    Style::new().light_green()
+                } else {
+                    Style::new()
+                };
+            let selected_files_block = Block::new()
+                .title("Selected files [2]")
+                .borders(Borders::all())
+                .border_style(selected_files_block_style);
+
+            let selected_files_list_widget = List::new(selected_files_list_item)
+                .block(selected_files_block)
+                .highlight_style(SELECTED_STYLE)
+                .highlight_symbol(">");
+
+            frame.render_stateful_widget(
+                selected_files_list_widget,
+                root_outer_layout[1],
+                &mut selected_files_state,
+            );
 
             frame.render_widget(&current_directory_paragraph, inner_left_layout[0]);
         })?;
@@ -116,12 +151,14 @@ fn run(mut terminal: DefaultTerminal) -> Result<()> {
         if let Event::Key(key) = event::read()? {
             match key.code {
                 KeyCode::Char('q') => break Ok(()),
-                KeyCode::Char('j') => {
-                    file_list_state.select_next();
-                }
-                KeyCode::Char('k') => {
-                    file_list_state.select_previous();
-                }
+                KeyCode::Char('j') => match application_state.current_pane {
+                    Pane::Files => file_list_state.select_next(),
+                    Pane::SelectedFiles => selected_files_state.select_next(),
+                },
+                KeyCode::Char('k') => match application_state.current_pane {
+                    Pane::Files => file_list_state.select_previous(),
+                    Pane::SelectedFiles => selected_files_state.select_previous(),
+                },
                 KeyCode::Char(' ') => {
                     let selected_file_index = file_list_state.selected();
                     let selected_file = application_state
@@ -133,7 +170,7 @@ fn run(mut terminal: DefaultTerminal) -> Result<()> {
                         toggle_selected_file(&application_state.selected_files, selected_file);
                     application_state.selected_files = new_selected_files;
                 }
-                KeyCode::Char('h') => {
+                KeyCode::Char('h') | KeyCode::Char('-') => {
                     application_state.current_directory =
                         get_parent_dir(&application_state.current_directory);
                     application_state.files = sort_file_paths_dirs_first_then_files(
@@ -153,6 +190,21 @@ fn run(mut terminal: DefaultTerminal) -> Result<()> {
                         application_state.files = sort_file_paths_dirs_first_then_files(
                             &get_files_for_dir(&application_state.current_directory),
                         );
+                    }
+                }
+                KeyCode::Char('1') => {
+                    if application_state.current_pane != Pane::Files {
+                        application_state.current_pane = Pane::Files;
+                    }
+                }
+                KeyCode::Char('2') => {
+                    if application_state.current_pane != Pane::SelectedFiles {
+                        application_state.current_pane = Pane::SelectedFiles;
+                        if selected_files_state.selected() == None
+                            && !application_state.selected_files.is_empty()
+                        {
+                            selected_files_state.select(Some(0));
+                        }
                     }
                 }
                 _ => {}
