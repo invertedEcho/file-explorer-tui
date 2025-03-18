@@ -13,8 +13,8 @@ use env::env::get_home_dir;
 
 mod file;
 use file::file::{
-    get_files_for_dir, get_parent_dir, is_path_directory, sort_file_paths_dirs_first_then_files,
-    File,
+    delete_file, get_files_for_dir, get_parent_dir, is_path_directory,
+    sort_file_paths_dirs_first_then_files, File,
 };
 
 struct ApplicationState {
@@ -22,6 +22,7 @@ struct ApplicationState {
     selected_files: Vec<File>,
     current_directory: String,
     current_pane: Pane,
+    current_message: String,
 }
 
 #[derive(PartialEq, Debug)]
@@ -63,6 +64,7 @@ fn run(mut terminal: DefaultTerminal) -> Result<()> {
         selected_files: vec![],
         current_directory: initial_directory,
         current_pane: Pane::Files,
+        current_message: String::from("Hi!"),
     };
 
     let mut file_list_state = ListState::default();
@@ -82,6 +84,7 @@ fn run(mut terminal: DefaultTerminal) -> Result<()> {
             };
             let files_block = Block::new()
                 .title("Files [1]")
+                .title_bottom(Line::raw("(D)elete single").right_aligned())
                 .borders(Borders::all())
                 .border_style(files_block_border_style);
 
@@ -101,15 +104,27 @@ fn run(mut terminal: DefaultTerminal) -> Result<()> {
                 .highlight_style(SELECTED_STYLE)
                 .highlight_symbol(">");
 
-            let root_outer_layout = Layout::default()
+            let root_layout = Layout::default()
+                .direction(Direction::Vertical)
+                .constraints(vec![Constraint::Percentage(90), Constraint::Percentage(10)])
+                .split(area);
+
+            let root_upper_layout = Layout::default()
                 .direction(Direction::Horizontal)
                 .constraints(vec![Constraint::Percentage(70), Constraint::Percentage(30)])
-                .split(area);
+                .split(root_layout[0]);
+
+            let log_text_box = Paragraph::new(application_state.current_message.clone()).block(
+                Block::new()
+                    .borders(Borders::all())
+                    .title("Current message"),
+            );
+            frame.render_widget(log_text_box, root_layout[1]);
 
             let inner_left_layout = Layout::default()
                 .direction(Direction::Vertical)
                 .constraints(vec![Constraint::Percentage(7), Constraint::Percentage(93)])
-                .split(root_outer_layout[0]);
+                .split(root_upper_layout[0]);
 
             frame.render_stateful_widget(
                 &files_list_widget_with_block,
@@ -131,6 +146,7 @@ fn run(mut terminal: DefaultTerminal) -> Result<()> {
                 };
             let selected_files_block = Block::new()
                 .title("Selected files [2]")
+                .title_bottom(Line::raw("(D)elete all").right_aligned())
                 .borders(Borders::all())
                 .border_style(selected_files_block_style);
 
@@ -141,7 +157,7 @@ fn run(mut terminal: DefaultTerminal) -> Result<()> {
 
             frame.render_stateful_widget(
                 selected_files_list_widget,
-                root_outer_layout[1],
+                root_upper_layout[1],
                 &mut selected_files_state,
             );
 
@@ -207,6 +223,28 @@ fn run(mut terminal: DefaultTerminal) -> Result<()> {
                         }
                     }
                 }
+                KeyCode::Char('D') => match application_state.current_pane {
+                    Pane::Files => {
+                        let file = get_selected_item_from_list_state(
+                            &file_list_state,
+                            &application_state.files,
+                        );
+                        let delete_result = delete_file(file);
+                        match delete_result {
+                            Ok(_) => {
+                                application_state.current_message = String::from(format!(
+                                    "Successfully deleted {:?}",
+                                    file.full_path
+                                ))
+                            }
+                            Err(err) => {
+                                application_state.current_message =
+                                    String::from(format!("Failed to delete file: {:?}", err))
+                            }
+                        }
+                    }
+                    Pane::SelectedFiles => {}
+                },
                 _ => {}
             }
         }
@@ -216,7 +254,6 @@ fn run(mut terminal: DefaultTerminal) -> Result<()> {
 /// TODO: Might just be a generic function.
 /// This function checks if the newly selected file already exists in the existing selected files.
 /// If yes, it will be removed. Otherwise it will be added.
-/// Creates a new vec with new Strings
 fn toggle_selected_file(selected_files: &Vec<File>, selected_file: &File) -> Vec<File> {
     let file_exists = selected_files
         .iter()
@@ -237,4 +274,14 @@ fn toggle_selected_file(selected_files: &Vec<File>, selected_file: &File) -> Vec
             .collect();
         new_selected_files
     }
+}
+
+// isnt it really good if a function only uses borrowed data and also returns borrowed data?
+// so no new memory is allocated?
+fn get_selected_item_from_list_state<'a>(state: &ListState, list: &'a Vec<File>) -> &'a File {
+    let selected_index = state.selected().expect("something should be selected");
+    let selected_item = list
+        .get(selected_index)
+        .expect("given list actually contains item from given index");
+    return selected_item;
 }

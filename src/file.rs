@@ -132,4 +132,16 @@ pub mod file {
         everything_together.sort();
         return everything_together;
     }
+
+    /// Deletes the given file. If its just a file, it will be deleted. If its a directory, the
+    /// entire directory will be deleted recursively.
+    pub fn delete_file(file: &File) -> Result<(), std::io::Error> {
+        let file_path = &file.full_path;
+        let is_path_directory = is_path_directory(file_path);
+        if is_path_directory {
+            fs::remove_dir_all(file_path)
+        } else {
+            fs::remove_file(file_path)
+        }
+    }
 }
