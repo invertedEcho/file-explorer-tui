@@ -13,7 +13,7 @@ pub mod keys {
         AppState,
     };
 
-    pub fn handle_key_event(app_state: &mut AppState) {
+    pub fn handle_key_event(app_state: &mut AppState) -> Result<&str, ()> {
         let event = event::read().expect("can read event");
         if let Event::Key(key) = event {
             match app_state.input_action != InputAction::None {
@@ -89,8 +89,10 @@ pub mod keys {
                                         app_state.message =
                                             "Successfully deleted all files.".to_string();
                                     } else {
+                                        let thing =
+                                            if failed_count == 1 { "file" } else { "files" };
                                         app_state.message =
-                                            format!("Failed to delete {} files.", failed_count);
+                                            format!("Failed to delete {} {}.", failed_count, thing);
                                     }
                                     app_state.input_action = InputAction::None;
                                 }
@@ -106,7 +108,7 @@ pub mod keys {
                         app_state.input_action = InputAction::CreateFile;
                         app_state.message = "Type in the filename:".to_string();
                     }
-                    // KeyCode::Char('q') => break Ok(()),
+                    KeyCode::Char('q') => return Ok("quit"),
                     KeyCode::Char('j') => match app_state.pane {
                         Pane::Files => app_state.file_list_state.select_next(),
                         Pane::SelectedFiles => app_state.selected_files_list_state.select_next(),
@@ -183,17 +185,15 @@ pub mod keys {
                             ));
                         }
                         Pane::SelectedFiles => {
-                            let files = &app_state.selected_files;
                             app_state.input_action = InputAction::DeleteFile;
-                            app_state.message = format!(
-                                "Please confirm deletion of all {} selected files",
-                                files.len()
-                            )
+                            app_state.message =
+                                "Please confirm deletion of all selected files".to_string();
                         }
                     },
                     _ => {}
                 },
             }
         }
+        return Ok("ok");
     }
 }

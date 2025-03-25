@@ -58,6 +58,17 @@ fn run(mut terminal: DefaultTerminal) -> Result<()> {
 
     loop {
         terminal.draw(|frame| draw_widgets_to_frame(frame, &mut app_state))?;
-        handle_key_event(&mut app_state);
+        let result = handle_key_event(&mut app_state);
+        match result {
+            Ok(value) => {
+                // TODO: eehhhh i dont know about this
+                if value == "quit" {
+                    break Ok(())
+                }
+            }
+            Err(_) => {
+                continue
+            }
+        }
     }
 }
