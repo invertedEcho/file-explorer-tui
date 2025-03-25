@@ -151,4 +151,29 @@ pub mod file {
             }
         }
     }
+
+    /// TODO: Might just be a generic function and shouldnt really be in file module.
+    /// This function checks if the newly selected file already exists in the existing selected files.
+    /// If yes, it will be removed. Otherwise it will be added.
+    pub fn toggle_selected_file(selected_files: &Vec<File>, selected_file: &File) -> Vec<File> {
+        let file_exists = selected_files
+            .iter()
+            .any(|file| file.full_path == selected_file.full_path);
+        if file_exists {
+            let files_vec_without_selected_file: Vec<File> = selected_files
+                .iter()
+                .filter(|file| *file.full_path != selected_file.full_path)
+                .map(|file| file.clone())
+                .collect();
+            files_vec_without_selected_file.to_vec()
+        } else {
+            let new_thing: Vec<File> = vec![selected_file.clone()];
+            let new_selected_files = new_thing
+                .iter()
+                .chain(selected_files)
+                .map(|file| file.clone())
+                .collect();
+            new_selected_files
+        }
+    }
 }
