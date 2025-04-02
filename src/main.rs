@@ -2,15 +2,20 @@ use color_eyre::Result;
 use keys::keys::handle_key_event;
 use ratatui::{widgets::ListState, DefaultTerminal};
 
-mod env;
 use env::env::get_home_dir;
-
-mod file;
 use file::file::{get_files_for_dir, sort_file_paths_dirs_first_then_files, File};
 use widget::widget::{draw_widgets_to_frame, InputAction, Pane};
 
+mod env;
+mod file;
 mod keys;
+mod utils;
 mod widget;
+
+// TODO:
+// fix: remember where we left cursor at when going into dir and going back
+// feat: hotkey cheatsheet in-app
+// feat: open file via enter with system provided program
 
 struct AppState {
     files: Vec<File>,
@@ -63,12 +68,10 @@ fn run(mut terminal: DefaultTerminal) -> Result<()> {
             Ok(value) => {
                 // TODO: eehhhh i dont know about this
                 if value == "quit" {
-                    break Ok(())
+                    break Ok(());
                 }
             }
-            Err(_) => {
-                continue
-            }
+            Err(_) => continue,
         }
     }
 }

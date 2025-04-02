@@ -4,7 +4,6 @@ pub mod widget {
     use ratatui::{
         layout::{Constraint, Direction, Layout, Position},
         style::{Color, Modifier, Style, Stylize},
-        text::Line,
         widgets::{Block, Borders, List, ListItem, ListState, Paragraph},
         Frame,
     };
@@ -13,7 +12,6 @@ pub mod widget {
     pub enum InputAction {
         None,
         DeleteFile,
-        CreateFile,
     }
 
     #[derive(PartialEq, Debug)]
@@ -35,16 +33,13 @@ pub mod widget {
         };
         let files_block = Block::new()
             .title("Files [1]")
-            .title_bottom(Line::raw("(D)elete single").right_aligned())
             .borders(Borders::all())
             .border_style(files_block_border_style);
 
         let current_dir_block = Block::new()
             .title("Current directory")
             .borders(Borders::all())
-            .border_style(Style::new().light_green())
-            .title_top(Line::from("[h or -] -> Parent Dir").right_aligned())
-            .title_top(Line::from("[l or Enter] -> Go into Dir").right_aligned());
+            .border_style(Style::new().light_green());
 
         let current_directory_paragraph =
             Paragraph::new(app_state.working_directory.clone()).block(current_dir_block);
@@ -85,7 +80,7 @@ pub mod widget {
 
         let inner_left_layout = Layout::default()
             .direction(Direction::Vertical)
-            .constraints(vec![Constraint::Percentage(7), Constraint::Percentage(93)])
+            .constraints(vec![Constraint::Min(3), Constraint::Percentage(93)])
             .split(inner_upper_layout[0]);
 
         frame.render_stateful_widget(
@@ -107,7 +102,6 @@ pub mod widget {
         };
         let selected_files_block = Block::new()
             .title("Selected files [2]")
-            .title_bottom(Line::raw("(D)elete all").right_aligned())
             .borders(Borders::all())
             .border_style(selected_files_block_style);
 
@@ -142,7 +136,10 @@ pub mod widget {
         app_state.user_input.insert(input_length, new_char);
     }
 
-    pub fn pop_char_input(app_state: &mut AppState) {
+    pub fn handle_backspace(app_state: &mut AppState) {
+        if app_state.input_action == InputAction::None {
+            return;
+        }
         app_state.user_input.pop();
     }
 
