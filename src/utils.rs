@@ -10,6 +10,9 @@ pub mod utils {
         AppState,
     };
 
+    // TODO: this module just contains functions that dont fit into the other modules.
+    // we should split up into more modules.
+
     pub fn enter_directory(app_state: &mut AppState) {
         let selected_file_index = app_state.file_list_state.selected();
         match selected_file_index {
@@ -22,9 +25,7 @@ pub mod utils {
 
                 if is_path_directory(&selected_file.full_path) {
                     app_state.working_directory = selected_file.full_path.to_string();
-                    app_state.files = sort_file_paths_dirs_first_then_files(&get_files_for_dir(
-                        &app_state.working_directory,
-                    ));
+                    refresh_files_for_working_directory(app_state);
                 }
             }
         }
@@ -32,8 +33,9 @@ pub mod utils {
 
     pub fn navigate_to_parent_directory(app_state: &mut AppState) {
         app_state.working_directory = get_parent_dir(&app_state.working_directory);
-        app_state.files =
-            sort_file_paths_dirs_first_then_files(&get_files_for_dir(&app_state.working_directory));
+        refresh_files_for_working_directory(app_state);
+
+        // make sure something is selected if nothing is selected
         match app_state.file_list_state.selected() {
             None => {
                 app_state.file_list_state.select(Some(0));
@@ -94,6 +96,12 @@ pub mod utils {
             reset_current_message_and_input(app_state);
         }
         app_state.input_action = InputAction::None;
-        app_state.files = get_files_for_dir(&app_state.working_directory);
+        refresh_files_for_working_directory(app_state);
+    }
+
+    pub fn refresh_files_for_working_directory(app_state: &mut AppState) {
+        let files = get_files_for_dir(&app_state.working_directory);
+        let sorted_files = sort_file_paths_dirs_first_then_files(&files);
+        app_state.files = sorted_files;
     }
 }

@@ -12,6 +12,7 @@ pub mod widget {
     pub enum InputAction {
         None,
         DeleteFile,
+        CreateFile,
     }
 
     #[derive(PartialEq, Debug)]
@@ -123,6 +124,11 @@ pub mod widget {
                 lower_layout.y + 1,
             ))
         }
+    }
+
+    pub fn reset_input(app_state: &mut AppState) {
+        app_state.user_input = "".to_string();
+        app_state.input_action = InputAction::None;
     }
 
     pub fn reset_current_message_and_input(app_state: &mut AppState) {
