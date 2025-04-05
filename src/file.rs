@@ -1,7 +1,14 @@
 pub mod file {
-    use std::{cmp::Ordering, fs, path::Path};
+    use std::{
+        cmp::Ordering,
+        error::Error,
+        fs::{self, create_dir},
+        path::Path,
+    };
 
     use ratatui::text::Text;
+
+    use crate::{widget::widget::InputAction, AppState};
 
     #[derive(Clone)]
     pub struct File {
@@ -174,6 +181,23 @@ pub mod file {
                 .map(|file| file.clone())
                 .collect();
             new_selected_files
+        }
+    }
+
+    // both cases return exact same thing
+    pub fn create_file(full_path: &String) -> Result<String, String> {
+        if full_path.ends_with("/") {
+            let result = create_dir(&full_path);
+            match result {
+                Ok(()) => Ok(format!("Successfully created directory: {}", &full_path)),
+                Err(error) => Err(error.to_string()),
+            }
+        } else {
+            let result = fs::File::create(&full_path);
+            match result {
+                Ok(_file) => Ok(format!("Successfully created file: {}", &full_path)),
+                Err(error) => Err(error.to_string()),
+            }
         }
     }
 }
