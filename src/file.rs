@@ -184,9 +184,10 @@ pub mod file {
         }
     }
 
-    // both cases return exact same thing
     pub fn create_file(full_path: &String) -> Result<String, String> {
-        if full_path.ends_with("/") {
+        let is_dir = full_path.ends_with("/");
+
+        if is_dir {
             let result = create_dir(&full_path);
             match result {
                 Ok(()) => Ok(format!("Successfully created directory: {}", &full_path)),
