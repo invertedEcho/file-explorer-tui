@@ -53,55 +53,68 @@ pub mod keys {
         }
 
         match char {
-            'j' => match app_state.pane {
-                Pane::Files => app_state.file_list_state.select_next(),
-                Pane::SelectedFiles => app_state.selected_files_list_state.select_next(),
-            },
-            'k' => match app_state.pane {
-                Pane::Files => app_state.file_list_state.select_previous(),
-                Pane::SelectedFiles => app_state.selected_files_list_state.select_previous(),
-            },
-            'q' => {
-                if app_state.input_action == InputAction::None {
-                    return Ok("quit");
-                }
-            }
-
-            ' ' => {
-                let selected_file_index = app_state.file_list_state.selected();
-                let selected_file = app_state
-                    .files
-                    .get(selected_file_index.expect("there should be a selected file"))
-                    .expect("the selected file should exist");
-
-                let new_selected_files =
-                    toggle_selected_file(&app_state.selected_files, selected_file);
-                app_state.selected_files = new_selected_files;
-            }
+            'j' => handle_j_char(app_state),
+            'k' => handle_k_char(app_state),
+            'q' => return handle_q_char(app_state),
+            ' ' => handle_space(app_state),
             'h' | '-' => navigate_to_parent_directory(app_state),
             'l' => enter_directory(app_state),
-            '1' => {
-                if app_state.pane != Pane::Files && app_state.input_action == InputAction::None {
-                    app_state.pane = Pane::Files;
-                }
-            }
-            '2' => {
-                if app_state.pane != Pane::SelectedFiles
-                    && app_state.input_action == InputAction::None
-                {
-                    app_state.pane = Pane::SelectedFiles;
-                    if app_state.selected_files_list_state.selected() == None
-                        && !app_state.selected_files.is_empty()
-                    {
-                        app_state.selected_files_list_state.select(Some(0));
-                    }
-                }
-            }
+            '1' => handle_one_char(app_state),
+            '2' => handle_two_char(app_state),
             'D' => handle_uppercase_d_char(app_state),
             'a' => handle_a_char(app_state),
             _ => {}
         }
         Ok("ok")
+    }
+
+    fn handle_j_char(app_state: &mut AppState) {
+        match app_state.pane {
+            Pane::Files => app_state.file_list_state.select_next(),
+            Pane::SelectedFiles => app_state.selected_files_list_state.select_next(),
+        }
+    }
+
+    fn handle_k_char(app_state: &mut AppState) {
+        match app_state.pane {
+            Pane::Files => app_state.file_list_state.select_previous(),
+            Pane::SelectedFiles => app_state.selected_files_list_state.select_previous(),
+        }
+    }
+
+    fn handle_q_char(app_state: &mut AppState) -> Result<&str, ()> {
+        if app_state.input_action == InputAction::None {
+            return Ok("quit");
+        }
+        return Ok("ok");
+    }
+
+    fn handle_space(app_state: &mut AppState) {
+        let selected_file_index = app_state.file_list_state.selected();
+        let selected_file = app_state
+            .files
+            .get(selected_file_index.expect("there should be a selected file"))
+            .expect("the selected file should exist");
+
+        let new_selected_files = toggle_selected_file(&app_state.selected_files, selected_file);
+        app_state.selected_files = new_selected_files;
+    }
+
+    fn handle_one_char(app_state: &mut AppState) {
+        if app_state.pane != Pane::Files && app_state.input_action == InputAction::None {
+            app_state.pane = Pane::Files;
+        }
+    }
+
+    fn handle_two_char(app_state: &mut AppState) {
+        if app_state.pane != Pane::SelectedFiles && app_state.input_action == InputAction::None {
+            app_state.pane = Pane::SelectedFiles;
+            if app_state.selected_files_list_state.selected() == None
+                && !app_state.selected_files.is_empty()
+            {
+                app_state.selected_files_list_state.select(Some(0));
+            }
+        }
     }
 
     fn handle_uppercase_d_char(app_state: &mut AppState) {
