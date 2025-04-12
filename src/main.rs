@@ -1,13 +1,15 @@
 use color_eyre::Result;
+use input_action::input_action::InputAction;
 use keys::keys::handle_key_event;
 use ratatui::{widgets::ListState, DefaultTerminal};
 
 use env::env::get_home_dir;
 use file::file::{get_files_for_dir, sort_file_paths_dirs_first_then_files, File};
-use widget::widget::{draw_widgets_to_frame, InputAction, Pane};
+use widget::widget::{draw_widgets_to_frame, Pane};
 
 mod env;
 mod file;
+mod input_action;
 mod keys;
 mod utils;
 mod widget;
@@ -24,7 +26,6 @@ struct AppState {
     pane: Pane,
     message: String,
     user_input: String,
-    // TODO: need better name for this
     input_action: InputAction,
     file_list_state: ListState,
     selected_files_list_state: ListState,
