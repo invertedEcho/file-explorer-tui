@@ -1,14 +1,11 @@
 pub mod file {
     use std::{
         cmp::Ordering,
-        error::Error,
         fs::{self, create_dir},
         path::Path,
     };
 
     use ratatui::text::Text;
-
-    use crate::{widget::widget::InputAction, AppState};
 
     #[derive(Clone)]
     pub struct File {

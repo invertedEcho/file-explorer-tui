@@ -1,5 +1,5 @@
 pub mod widget {
-    use crate::{file::file::File, AppState};
+    use crate::{file::file::File, input_action::input_action::InputAction, AppState};
 
     use ratatui::{
         layout::{Constraint, Direction, Layout, Position},
@@ -7,13 +7,6 @@ pub mod widget {
         widgets::{Block, Borders, List, ListItem, ListState, Paragraph},
         Frame,
     };
-
-    #[derive(PartialEq, Debug)]
-    pub enum InputAction {
-        None,
-        DeleteFile,
-        CreateFile,
-    }
 
     #[derive(PartialEq, Debug)]
     pub enum Pane {

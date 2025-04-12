@@ -4,9 +4,8 @@ pub mod utils {
             delete_file, get_files_for_dir, get_parent_dir, is_path_directory,
             sort_file_paths_dirs_first_then_files,
         },
-        widget::widget::{
-            get_selected_item_from_list_state, reset_current_message_and_input, InputAction,
-        },
+        input_action::input_action::InputAction,
+        widget::widget::{get_selected_item_from_list_state, reset_current_message_and_input},
         AppState,
     };
 
