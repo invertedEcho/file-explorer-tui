@@ -7,6 +7,7 @@ use env::env::get_home_dir;
 use file::file::{get_files_for_dir, sort_file_paths_dirs_first_then_files, File};
 use widget::widget::{draw_widgets_to_frame, Pane};
 
+mod cmd;
 mod env;
 mod file;
 mod input_action;

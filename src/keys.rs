@@ -2,6 +2,7 @@ pub mod keys {
     use crossterm::event::{self, Event, KeyCode};
 
     use crate::{
+        cmd::cmd::open_file_with_system_app,
         file::file::toggle_selected_file,
         input_action::input_action::{handle_create_file, handle_delete_file, InputAction},
         utils::utils::{enter_directory, get_is_in_input_mode, navigate_to_parent_directory},
@@ -63,6 +64,7 @@ pub mod keys {
             '2' => handle_two_char(app_state),
             'D' => handle_uppercase_d_char(app_state),
             'a' => handle_a_char(app_state),
+            'o' => handle_o_char(app_state),
             _ => {}
         }
         Ok("ok")
@@ -142,5 +144,10 @@ pub mod keys {
         app_state.message =
             "Enter the name for new filename: (Tip: use a trailing slash to create a directory)"
                 .into();
+    }
+
+    fn handle_o_char(app_state: &mut AppState) {
+        let item = get_selected_item_from_list_state(&app_state.file_list_state, &app_state.files);
+        open_file_with_system_app(&item.full_path);
     }
 }
