@@ -7,6 +7,7 @@ use env::env::get_home_dir;
 use file::file::{get_files_for_dir, sort_file_paths_dirs_first_then_files, File};
 use widget::widget::{draw_widgets_to_frame, Pane};
 
+mod cmd;
 mod env;
 mod file;
 mod input_action;
@@ -15,9 +16,12 @@ mod utils;
 mod widget;
 
 // TODO:
-// fix: remember where we left cursor at when going into dir and going back
+// fix: remember where we left selected state at when going into dir and going back
 // feat: hotkey cheatsheet in-app
-// feat: open file via enter with system provided program
+// feat: open file via enter with system provided program -> WIP
+// fix: hot-reload of files via watcher or just simple key to reload?
+// fix: truncate filename in deletion message (and other places too)
+// feat: rename files
 
 struct AppState {
     files: Vec<File>,
