@@ -4,6 +4,7 @@ pub mod input_action {
         None,
         DeleteFile,
         CreateFile,
+        RenameFile,
     }
 
     use crate::{
@@ -12,7 +13,9 @@ pub mod input_action {
             delete_currently_selected_file, delete_selected_files,
             refresh_files_for_working_directory,
         },
-        widget::widget::{reset_current_message_and_input, reset_input, Pane},
+        widget::widget::{
+            get_selected_item_from_list_state, reset_current_message_and_input, reset_input, Pane,
+        },
         AppState,
     };
 
@@ -42,5 +45,9 @@ pub mod input_action {
         } else {
             reset_current_message_and_input(app_state);
         }
+    }
+
+    pub fn handle_rename_file(app_state: &mut AppState) {
+        let file = get_selected_item_from_list_state(&app_state.file_list_state, &app_state.files);
     }
 }

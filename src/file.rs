@@ -1,7 +1,8 @@
 pub mod file {
     use std::{
         cmp::Ordering,
-        fs::{self, create_dir},
+        fs::{self, create_dir, rename},
+        io::Error,
         path::Path,
     };
 
@@ -197,5 +198,10 @@ pub mod file {
                 Err(error) => Err(error.to_string()),
             }
         }
+    }
+
+    // TODO: rust docs say the rename function wont work if its on another mountpoint.
+    pub fn rename_file(full_path: &String, new_name: &String) -> Result<(), Error> {
+        rename(full_path, new_name)
     }
 }

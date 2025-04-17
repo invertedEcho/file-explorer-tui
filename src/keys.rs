@@ -45,6 +45,8 @@ pub mod keys {
             InputAction::DeleteFile => {
                 handle_delete_file(app_state);
             }
+            // TODO: handle rename file
+            InputAction::RenameFile => {}
         };
     }
 
@@ -65,9 +67,15 @@ pub mod keys {
             'D' => handle_uppercase_d_char(app_state),
             'a' => handle_a_char(app_state),
             'o' => handle_o_char(app_state),
+            'r' => handle_r_char(app_state),
             _ => {}
         }
         Ok("ok")
+    }
+
+    fn handle_r_char(app_state: &mut AppState) {
+        app_state.message = "Please enter the new filename. Esc to abort".to_string();
+        app_state.input_action = InputAction::RenameFile;
     }
 
     fn handle_j_char(app_state: &mut AppState) {
