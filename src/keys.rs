@@ -147,7 +147,13 @@ pub mod keys {
     }
 
     fn handle_o_char(app_state: &mut AppState) {
-        let item = get_selected_item_from_list_state(&app_state.file_list_state, &app_state.files);
-        open_file_with_system_app(&item.full_path);
+        let selected_file =
+            get_selected_item_from_list_state(&app_state.file_list_state, &app_state.files);
+        let full_path_of_selected_file = &selected_file.full_path;
+        let result = open_file_with_system_app(&full_path_of_selected_file);
+        match result {
+            Ok(_) => {}
+            Err(err) => app_state.message = err.to_string(),
+        }
     }
 }
