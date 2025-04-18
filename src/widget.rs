@@ -1,10 +1,12 @@
 pub mod widget {
-    use crate::{file::file::File, input_action::input_action::InputAction, AppState};
+    use crate::{
+        file::file::File, input_action::input_action::InputAction, keys::keys::KEYS, AppState,
+    };
 
     use ratatui::{
-        layout::{Constraint, Direction, Layout, Position},
+        layout::{Constraint, Direction, Flex, Layout, Position, Rect},
         style::{Color, Modifier, Style, Stylize},
-        widgets::{Block, Borders, List, ListItem, ListState, Paragraph},
+        widgets::{Block, Borders, Clear, List, ListItem, ListState, Paragraph},
         Frame,
     };
 
@@ -26,7 +28,7 @@ pub mod widget {
             Style::new()
         };
         let files_block = Block::new()
-            .title("Files [1]")
+            .title("Files")
             .borders(Borders::all())
             .border_style(files_block_border_style);
 
@@ -95,7 +97,7 @@ pub mod widget {
             Style::new()
         };
         let selected_files_block = Block::new()
-            .title("Selected files [2]")
+            .title("Selected files")
             .borders(Borders::all())
             .border_style(selected_files_block_style);
 
@@ -116,6 +118,21 @@ pub mod widget {
                 lower_layout.x + app_state.user_input.len() as u16 + 1,
                 lower_layout.y + 1,
             ))
+        }
+
+        if app_state.show_cheatsheet {
+            let items: Vec<ListItem> = KEYS
+                .iter()
+                .map(|selected_file| ListItem::new(*selected_file))
+                .collect();
+
+            let block = Block::bordered().title("Cheatsheet");
+            let area = frame.area();
+            let area = popup_area(area, 50, 60);
+
+            let list = List::new(items).block(block);
+            frame.render_widget(Clear, area);
+            frame.render_widget(list, area);
         }
     }
 
@@ -151,5 +168,14 @@ pub mod widget {
             .get(selected_index)
             .expect("given list actually contains item from given index");
         return selected_item;
+    }
+
+    /// helper function to create a centered rect using up certain percentage of the available rect `r`
+    fn popup_area(area: Rect, percent_x: u16, percent_y: u16) -> Rect {
+        let vertical = Layout::vertical([Constraint::Percentage(percent_y)]).flex(Flex::Center);
+        let horizontal = Layout::horizontal([Constraint::Percentage(percent_x)]).flex(Flex::Center);
+        let [area] = vertical.areas(area);
+        let [area] = horizontal.areas(area);
+        area
     }
 }
