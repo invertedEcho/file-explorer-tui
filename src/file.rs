@@ -199,9 +199,4 @@ pub mod file {
             }
         }
     }
-
-    // TODO: rust docs say the rename function wont work if its on another mountpoint.
-    pub fn rename_file(full_path: &String, new_name: &String) -> Result<(), Error> {
-        rename(full_path, new_name)
-    }
 }

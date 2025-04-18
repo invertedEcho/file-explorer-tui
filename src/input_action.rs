@@ -7,6 +7,8 @@ pub mod input_action {
         RenameFile,
     }
 
+    use std::{fs::rename, io::Error};
+
     use crate::{
         file::file::create_file,
         utils::utils::{
@@ -47,7 +49,12 @@ pub mod input_action {
         }
     }
 
-    pub fn handle_rename_file(app_state: &mut AppState) {
+    pub fn handle_rename_file(app_state: &mut AppState) -> Result<(), Error> {
         let file = get_selected_item_from_list_state(&app_state.file_list_state, &app_state.files);
+        let new_file_name = &app_state.user_input;
+        let result = rename(&file.full_path, new_file_name);
+        refresh_files_for_working_directory(app_state);
+        reset_current_message_and_input(app_state);
+        result
     }
 }
