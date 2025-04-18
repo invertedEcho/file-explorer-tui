@@ -1,4 +1,20 @@
 pub mod keys {
+    pub const KEYS: [&str; 14] = [
+        "j to navigate down",
+        "k to navigate up",
+        "l to enter directory",
+        "h or -",
+        "a to create file",
+        "o to open",
+        "D to delete (focused file or when in selected files pane all files)",
+        "r to rename",
+        "q to quit the tui",
+        "c to toggle cheatsheet",
+        "1 to focus file pane",
+        "2 to focus selected files pane",
+        "Space to add/remove file to selected files pane",
+        "Esc in input mode to abort input action",
+    ];
     use crossterm::event::{self, Event, KeyCode};
 
     use crate::{
@@ -76,9 +92,14 @@ pub mod keys {
             'a' => handle_a_char(app_state),
             'o' => handle_o_char(app_state),
             'r' => handle_r_char(app_state),
+            'c' => handle_c_char(app_state),
             _ => {}
         }
         Ok("ok")
+    }
+
+    fn handle_c_char(app_state: &mut AppState) {
+        app_state.show_cheatsheet = !app_state.show_cheatsheet;
     }
 
     fn handle_r_char(app_state: &mut AppState) {

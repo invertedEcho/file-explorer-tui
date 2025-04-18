@@ -16,11 +16,11 @@ mod utils;
 mod widget;
 
 // TODO:
-// feat: rename files
 // fix: remember where we left selected state at when going into dir and going back
 // feat: hotkey cheatsheet in-app
 // fix: hot-reload of files via watcher or just simple key to reload?
 // fix: truncate filename in deletion message (and other places too)
+// feat: toggle selected files pane
 
 struct AppState {
     files: Vec<File>,
@@ -32,6 +32,7 @@ struct AppState {
     input_action: InputAction,
     file_list_state: ListState,
     selected_files_list_state: ListState,
+    show_cheatsheet: bool,
 }
 
 fn main() -> Result<()> {
@@ -62,6 +63,7 @@ fn run(mut terminal: DefaultTerminal) -> Result<()> {
         input_action: InputAction::None,
         file_list_state: ListState::default(),
         selected_files_list_state: ListState::default(),
+        show_cheatsheet: false,
     };
     app_state.file_list_state.select(Some(0));
 
