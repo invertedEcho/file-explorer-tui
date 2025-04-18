@@ -16,12 +16,11 @@ mod utils;
 mod widget;
 
 // TODO:
+// feat: rename files
 // fix: remember where we left selected state at when going into dir and going back
 // feat: hotkey cheatsheet in-app
-// feat: open file via enter with system provided program -> WIP
 // fix: hot-reload of files via watcher or just simple key to reload?
 // fix: truncate filename in deletion message (and other places too)
-// feat: rename files
 
 struct AppState {
     files: Vec<File>,

@@ -1,7 +1,8 @@
 pub mod file {
     use std::{
         cmp::Ordering,
-        fs::{self, create_dir},
+        fs::{self, create_dir, rename},
+        io::Error,
         path::Path,
     };
 

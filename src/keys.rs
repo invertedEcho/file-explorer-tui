@@ -4,7 +4,9 @@ pub mod keys {
     use crate::{
         cmd::cmd::open_file_with_system_app,
         file::file::toggle_selected_file,
-        input_action::input_action::{handle_create_file, handle_delete_file, InputAction},
+        input_action::input_action::{
+            handle_create_file, handle_delete_file, handle_rename_file, InputAction,
+        },
         utils::utils::{enter_directory, get_is_in_input_mode, navigate_to_parent_directory},
         widget::widget::{
             add_char_input, get_selected_item_from_list_state, handle_backspace,
@@ -45,12 +47,20 @@ pub mod keys {
             InputAction::DeleteFile => {
                 handle_delete_file(app_state);
             }
+            InputAction::RenameFile => {
+                let result = handle_rename_file(app_state);
+                match result {
+                    Ok(()) => app_state.message = "Successfully renamed file!".to_string(),
+                    Err(val) => app_state.message = format!("Failed to rename file: {}", val),
+                }
+            }
         };
     }
 
     fn handle_char(char: char, app_state: &mut AppState) -> Result<&str, ()> {
         if app_state.input_action != InputAction::None {
             add_char_input(char, app_state);
+            return Ok("ok");
         }
 
         match char {
@@ -65,9 +75,17 @@ pub mod keys {
             'D' => handle_uppercase_d_char(app_state),
             'a' => handle_a_char(app_state),
             'o' => handle_o_char(app_state),
+            'r' => handle_r_char(app_state),
             _ => {}
         }
         Ok("ok")
+    }
+
+    fn handle_r_char(app_state: &mut AppState) {
+        let file = get_selected_item_from_list_state(&app_state.file_list_state, &app_state.files);
+        app_state.message = "Please enter the new filename. Esc to abort".to_string();
+        app_state.input_action = InputAction::RenameFile;
+        app_state.user_input = file.full_path.clone();
     }
 
     fn handle_j_char(app_state: &mut AppState) {
