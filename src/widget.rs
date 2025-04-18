@@ -121,10 +121,7 @@ pub mod widget {
         }
 
         if app_state.show_cheatsheet {
-            let items: Vec<ListItem> = KEYS
-                .iter()
-                .map(|selected_file| ListItem::new(*selected_file))
-                .collect();
+            let items: Vec<ListItem> = KEYS.iter().map(|key| ListItem::new(*key)).collect();
 
             let block = Block::bordered().title("Cheatsheet");
             let area = frame.area();
