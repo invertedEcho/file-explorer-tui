@@ -3,7 +3,7 @@ pub mod keys {
         "j to navigate down",
         "k to navigate up",
         "l to enter directory",
-        "h or -",
+        "h or - to navigate to the parent directory",
         "a to create file",
         "o to open",
         "D to delete (focused file or when in selected files pane all files)",
@@ -23,7 +23,10 @@ pub mod keys {
         input_action::input_action::{
             handle_create_file, handle_delete_file, handle_rename_file, InputAction,
         },
-        utils::utils::{enter_directory, get_is_in_input_mode, navigate_to_parent_directory},
+        utils::utils::{
+            enter_directory, get_is_in_input_mode, navigate_to_parent_directory,
+            refresh_list_state_index_of_directory,
+        },
         widget::widget::{
             add_char_input, get_selected_item_from_list_state, handle_backspace,
             reset_current_message_and_input, Pane,
@@ -111,15 +114,27 @@ pub mod keys {
 
     fn handle_j_char(app_state: &mut AppState) {
         match app_state.pane {
-            Pane::Files => app_state.file_list_state.select_next(),
-            Pane::SelectedFiles => app_state.selected_files_list_state.select_next(),
+            Pane::Files => {
+                app_state.file_list_state.select_next();
+                refresh_list_state_index_of_directory(app_state, Pane::Files);
+            }
+            Pane::SelectedFiles => {
+                app_state.selected_files_list_state.select_next();
+                refresh_list_state_index_of_directory(app_state, Pane::SelectedFiles);
+            }
         }
     }
 
     fn handle_k_char(app_state: &mut AppState) {
         match app_state.pane {
-            Pane::Files => app_state.file_list_state.select_previous(),
-            Pane::SelectedFiles => app_state.selected_files_list_state.select_previous(),
+            Pane::Files => {
+                app_state.file_list_state.select_previous();
+                refresh_list_state_index_of_directory(app_state, Pane::Files);
+            }
+            Pane::SelectedFiles => {
+                app_state.selected_files_list_state.select_previous();
+                refresh_list_state_index_of_directory(app_state, Pane::SelectedFiles);
+            }
         }
     }
 
