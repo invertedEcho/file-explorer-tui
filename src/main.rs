@@ -31,6 +31,7 @@ struct AppState {
     user_input: String,
     input_action: InputAction,
     file_list_state: ListState,
+    last_file_list_state_index: usize,
     selected_files_list_state: ListState,
     show_cheatsheet: bool,
 }
@@ -64,13 +65,17 @@ fn run(mut terminal: DefaultTerminal) -> Result<()> {
         file_list_state: ListState::default(),
         selected_files_list_state: ListState::default(),
         show_cheatsheet: false,
+        last_file_list_state_index: 0,
     };
-    app_state.file_list_state.select(Some(0));
+    app_state
+        .file_list_state
+        .select(Some(app_state.last_file_list_state_index));
 
     loop {
         terminal.draw(|frame| draw_widgets_to_frame(frame, &mut app_state))?;
-        let result = handle_key_event(&mut app_state);
-        match result {
+
+        let handle_key_event_result = handle_key_event(&mut app_state);
+        match handle_key_event_result {
             Ok(value) => {
                 // TODO: eehhhh i dont know about this
                 if value == "quit" {

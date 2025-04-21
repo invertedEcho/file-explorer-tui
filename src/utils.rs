@@ -17,6 +17,7 @@ pub mod utils {
         match selected_file_index {
             None => {}
             Some(index) => {
+                app_state.last_file_list_state_index = index;
                 let selected_file = app_state
                     .files
                     .get(index)
@@ -34,13 +35,9 @@ pub mod utils {
         app_state.working_directory = get_parent_dir(&app_state.working_directory);
         refresh_files_for_working_directory(app_state);
 
-        // make sure something is selected if nothing is selected
-        match app_state.file_list_state.selected() {
-            None => {
-                app_state.file_list_state.select(Some(0));
-            }
-            _ => {}
-        }
+        app_state
+            .file_list_state
+            .select(Some(app_state.last_file_list_state_index));
     }
 
     pub fn get_is_in_input_mode(app_state: &AppState) -> bool {
