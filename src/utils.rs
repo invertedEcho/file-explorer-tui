@@ -19,7 +19,9 @@ pub mod utils {
         match selected_file_index {
             None => {}
             Some(index) => {
-                app_state.last_file_list_state_index = index;
+                app_state
+                    .list_state_index_of_directory
+                    .insert(app_state.working_directory.clone(), index);
                 let selected_file = app_state
                     .files
                     .get(index)

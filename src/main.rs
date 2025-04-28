@@ -18,8 +18,6 @@ mod utils;
 mod widget;
 
 // TODO:
-// fix: remember where we left selected state at when going into dir and going back -> WIP
-// feat: hotkey cheatsheet in-app
 // fix: hot-reload of files via watcher or just simple key to reload?
 // fix: truncate filename in deletion message (and other places too)
 // feat: toggle selected files pane
@@ -74,12 +72,15 @@ fn run(mut terminal: DefaultTerminal) -> Result<()> {
         .list_state_index_of_directory
         .insert(initial_directory.clone(), 0);
 
-    app_state.file_list_state.select(Some(
+    let list_state_index_of_initial_directory = Some(
         *app_state
             .list_state_index_of_directory
             .get(&initial_directory)
-            .expect("bla"),
-    ));
+            .unwrap(),
+    );
+    app_state
+        .file_list_state
+        .select(list_state_index_of_initial_directory);
 
     loop {
         terminal.draw(|frame| draw_widgets_to_frame(frame, &mut app_state))?;
