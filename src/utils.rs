@@ -19,6 +19,7 @@ pub mod utils {
         match selected_file_index {
             None => {}
             Some(index) => {
+                app_state.last_file_list_state_index = index;
                 let selected_file = app_state
                     .files
                     .get(index)
