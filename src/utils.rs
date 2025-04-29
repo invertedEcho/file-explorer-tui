@@ -5,7 +5,9 @@ pub mod utils {
             sort_file_paths_dirs_first_then_files,
         },
         input_action::input_action::InputAction,
-        widget::widget::{get_selected_item_from_list_state, reset_current_message_and_input},
+        widget::widget::{
+            get_selected_item_from_list_state, reset_current_message_and_input, Pane,
+        },
         AppState,
     };
 
@@ -17,11 +19,23 @@ pub mod utils {
         match selected_file_index {
             None => {}
             Some(index) => {
-                app_state.last_file_list_state_index = index;
+                app_state
+                    .list_state_index_of_directory
+                    .insert(app_state.working_directory.clone(), index);
                 let selected_file = app_state
                     .files
                     .get(index)
                     .expect("the selected file should exist");
+                let selected_file_full_path = &selected_file.full_path;
+
+                let index_of_dir_being_entered = app_state
+                    .list_state_index_of_directory
+                    .get(selected_file_full_path)
+                    .or(Some(&0));
+
+                app_state
+                    .file_list_state
+                    .select(index_of_dir_being_entered.copied());
 
                 if is_path_directory(&selected_file.full_path) {
                     app_state.working_directory = selected_file.full_path.to_string();
@@ -35,9 +49,12 @@ pub mod utils {
         app_state.working_directory = get_parent_dir(&app_state.working_directory);
         refresh_files_for_working_directory(app_state);
 
-        app_state
-            .file_list_state
-            .select(Some(app_state.last_file_list_state_index));
+        let index = app_state
+            .list_state_index_of_directory
+            .get(&app_state.working_directory)
+            .or(Some(&0));
+
+        app_state.file_list_state.select(index.copied());
     }
 
     pub fn get_is_in_input_mode(app_state: &AppState) -> bool {
@@ -99,5 +116,22 @@ pub mod utils {
         let files = get_files_for_dir(&app_state.working_directory);
         let sorted_files = sort_file_paths_dirs_first_then_files(&files);
         app_state.files = sorted_files;
+    }
+
+    pub fn refresh_list_state_index_of_directory(app_state: &mut AppState, current_pane: Pane) {
+        let new_index;
+        match current_pane {
+            Pane::Files => {
+                new_index = app_state.file_list_state.selected().or(Some(0));
+            }
+            Pane::SelectedFiles => {
+                new_index = app_state.selected_files_list_state.selected().or(Some(0));
+            }
+        }
+        let current_dir = &app_state.working_directory;
+
+        app_state
+            .list_state_index_of_directory
+            .insert(current_dir.to_string(), new_index.unwrap());
     }
 }

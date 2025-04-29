@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use color_eyre::Result;
 use input_action::input_action::InputAction;
 use keys::keys::handle_key_event;
@@ -16,8 +18,6 @@ mod utils;
 mod widget;
 
 // TODO:
-// fix: remember where we left selected state at when going into dir and going back
-// feat: hotkey cheatsheet in-app
 // fix: hot-reload of files via watcher or just simple key to reload?
 // fix: truncate filename in deletion message (and other places too)
 // feat: toggle selected files pane
@@ -31,7 +31,7 @@ struct AppState {
     user_input: String,
     input_action: InputAction,
     file_list_state: ListState,
-    last_file_list_state_index: usize,
+    list_state_index_of_directory: HashMap<String, usize>,
     selected_files_list_state: ListState,
     show_cheatsheet: bool,
 }
@@ -57,7 +57,7 @@ fn run(mut terminal: DefaultTerminal) -> Result<()> {
     let mut app_state = AppState {
         files: sorted_initial_files,
         selected_files: vec![],
-        working_directory: initial_directory,
+        working_directory: initial_directory.clone(),
         pane: Pane::Files,
         message: String::from("Hi!"),
         user_input: String::from(""),
@@ -65,11 +65,22 @@ fn run(mut terminal: DefaultTerminal) -> Result<()> {
         file_list_state: ListState::default(),
         selected_files_list_state: ListState::default(),
         show_cheatsheet: false,
-        last_file_list_state_index: 0,
+        list_state_index_of_directory: HashMap::new(),
     };
+
+    app_state
+        .list_state_index_of_directory
+        .insert(initial_directory.clone(), 0);
+
+    let list_state_index_of_initial_directory = Some(
+        *app_state
+            .list_state_index_of_directory
+            .get(&initial_directory)
+            .unwrap(),
+    );
     app_state
         .file_list_state
-        .select(Some(app_state.last_file_list_state_index));
+        .select(list_state_index_of_initial_directory);
 
     loop {
         terminal.draw(|frame| draw_widgets_to_frame(frame, &mut app_state))?;
