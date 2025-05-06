@@ -15,10 +15,12 @@ mainly to
 
 ### Features
 
+- Cheatsheet to see all keybinds (press c)
 - Create files
 - Delete files
 - Rename files
 - Open files with system-provided program
 - Bulk delete files by adding them into the "Selected files" stack
-- Remembers in which directory you went into (currently only in-memory, e.g. on an "app-running" basis)
+- Remembers in which directory you went into, for each directory (currently only in-memory, e.g. on an "app-running" basis)
+- Toggle selected files pane
 - Cross-platform (not tested on windows lol)

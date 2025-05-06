@@ -6,6 +6,7 @@ pub mod widget {
     use ratatui::{
         layout::{Constraint, Direction, Flex, Layout, Position, Rect},
         style::{Color, Modifier, Style, Stylize},
+        text::Line,
         widgets::{Block, Borders, Clear, List, ListItem, ListState, Paragraph},
         Frame,
     };
@@ -49,9 +50,15 @@ pub mod widget {
             Layout::vertical([Constraint::Percentage(90), Constraint::Percentage(10)]);
         let [upper_layout, lower_layout] = root_layout.areas(frame.area());
 
+        let constraints_for_inner_upper_layout = if app_state.show_selected_files_pane {
+            vec![Constraint::Percentage(70), Constraint::Percentage(30)]
+        } else {
+            vec![Constraint::Percentage(100)]
+        };
+
         let inner_upper_layout = Layout::default()
             .direction(Direction::Horizontal)
-            .constraints(vec![Constraint::Percentage(70), Constraint::Percentage(30)])
+            .constraints(constraints_for_inner_upper_layout)
             .split(upper_layout);
 
         let current_message_or_user_input_widget_title =
@@ -70,7 +77,8 @@ pub mod widget {
         let current_message_or_user_input_widget = Paragraph::new(text).block(
             Block::new()
                 .borders(Borders::all())
-                .title(current_message_or_user_input_widget_title),
+                .title(current_message_or_user_input_widget_title)
+                .title_bottom(Line::from("Press c to show the cheatsheet").right_aligned()),
         );
         frame.render_widget(current_message_or_user_input_widget, lower_layout);
 
@@ -85,32 +93,34 @@ pub mod widget {
             &mut app_state.file_list_state,
         );
 
-        let selected_files_list_item: Vec<ListItem> = app_state
-            .selected_files
-            .iter()
-            .map(|selected_file| ListItem::new(selected_file.full_path.clone()))
-            .collect();
+        if app_state.show_selected_files_pane {
+            let selected_files_list_item: Vec<ListItem> = app_state
+                .selected_files
+                .iter()
+                .map(|selected_file| ListItem::new(selected_file.full_path.clone()))
+                .collect();
 
-        let selected_files_block_style = if app_state.pane == Pane::SelectedFiles {
-            Style::new().light_green()
-        } else {
-            Style::new()
-        };
-        let selected_files_block = Block::new()
-            .title("Selected files")
-            .borders(Borders::all())
-            .border_style(selected_files_block_style);
+            let selected_files_block_style = if app_state.pane == Pane::SelectedFiles {
+                Style::new().light_green()
+            } else {
+                Style::new()
+            };
+            let selected_files_block = Block::new()
+                .title("Selected files")
+                .borders(Borders::all())
+                .border_style(selected_files_block_style);
 
-        let selected_files_list_widget = List::new(selected_files_list_item)
-            .block(selected_files_block)
-            .highlight_style(SELECTED_STYLE)
-            .highlight_symbol(">");
+            let selected_files_list_widget = List::new(selected_files_list_item)
+                .block(selected_files_block)
+                .highlight_style(SELECTED_STYLE)
+                .highlight_symbol(">");
 
-        frame.render_stateful_widget(
-            selected_files_list_widget,
-            inner_upper_layout[1],
-            &mut app_state.selected_files_list_state,
-        );
+            frame.render_stateful_widget(
+                selected_files_list_widget,
+                inner_upper_layout[1],
+                &mut app_state.selected_files_list_state,
+            );
+        }
 
         frame.render_widget(&current_directory_paragraph, inner_left_layout[0]);
         if app_state.input_action != InputAction::None {
