@@ -20,7 +20,6 @@ mod widget;
 // TODO:
 // fix: hot-reload of files via watcher or just simple key to reload?
 // fix: truncate filename in deletion message (and other places too)
-// feat: toggle selected files pane
 
 struct AppState {
     files: Vec<File>,
@@ -34,6 +33,7 @@ struct AppState {
     list_state_index_of_directory: HashMap<String, usize>,
     selected_files_list_state: ListState,
     show_cheatsheet: bool,
+    show_selected_files_pane: bool,
 }
 
 fn main() -> Result<()> {
@@ -64,8 +64,9 @@ fn run(mut terminal: DefaultTerminal) -> Result<()> {
         input_action: InputAction::None,
         file_list_state: ListState::default(),
         selected_files_list_state: ListState::default(),
-        show_cheatsheet: false,
         list_state_index_of_directory: HashMap::new(),
+        show_cheatsheet: false,
+        show_selected_files_pane: true,
     };
 
     app_state

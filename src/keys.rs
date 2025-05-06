@@ -1,19 +1,20 @@
 pub mod keys {
-    pub const KEYS: [&str; 14] = [
+    pub const KEYS: [&str; 15] = [
         "j to navigate down",
         "k to navigate up",
         "l to enter directory",
         "h or - to navigate to the parent directory",
         "a to create file",
-        "o to open",
-        "D to delete (focused file or when in selected files pane all files)",
-        "r to rename",
+        "o to open selected file",
+        "D to delete selected file (or when in selected files pane all files)",
+        "r to rename currently selected file",
         "q to quit the tui",
         "c to toggle cheatsheet",
+        "s to toggle selected files pane",
         "1 to focus file pane",
         "2 to focus selected files pane",
         "Space to add/remove file to selected files pane",
-        "Esc in input mode to abort input action",
+        "Esc in input mode to abort current action",
     ];
     use crossterm::event::{self, Event, KeyCode};
 
@@ -96,9 +97,14 @@ pub mod keys {
             'o' => handle_o_char(app_state),
             'r' => handle_r_char(app_state),
             'c' => handle_c_char(app_state),
+            's' => handle_s_char(app_state),
             _ => {}
         }
         Ok("ok")
+    }
+
+    fn handle_s_char(app_state: &mut AppState) {
+        app_state.show_selected_files_pane = !app_state.show_selected_files_pane
     }
 
     fn handle_c_char(app_state: &mut AppState) {
