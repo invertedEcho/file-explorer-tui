@@ -1,8 +1,9 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, path::Path, sync::mpsc};
 
 use color_eyre::Result;
 use input_action::input_action::InputAction;
 use keys::keys::handle_key_event;
+use notify::{Event, RecursiveMode, Watcher};
 use ratatui::{widgets::ListState, DefaultTerminal};
 
 use env::env::get_home_dir;
@@ -39,6 +40,19 @@ struct AppState {
 fn main() -> Result<()> {
     // installs error handling hook
     color_eyre::install()?;
+
+    let (tx, rx) = mpsc::channel::<Result<Event>>();
+
+    let mut watcher = notify::recommended_watcher(tx).expect("can get recommended watcher");
+
+    watcher.watch(Path::new("."), RecursiveMode::Recursive);
+
+    for res in rx {
+        match res {
+            Ok(event) => println!("event: {:?}", event),
+            Err(e) => println!("watch error: {:?}", e),
+        }
+    }
 
     let terminal = ratatui::init();
     let result = run(terminal);
