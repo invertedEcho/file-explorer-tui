@@ -1,5 +1,5 @@
 pub mod keys {
-    pub const KEYS: [&str; 15] = [
+    pub const KEYS: [&str; 16] = [
         "j to navigate down",
         "k to navigate up",
         "l to enter directory",
@@ -9,6 +9,7 @@ pub mod keys {
         "D to delete selected file (or when in selected files pane all files)",
         "r to rename currently selected file",
         "q to quit the tui",
+        "h to toggle hidden files",
         "c to toggle cheatsheet",
         "s to toggle selected files pane",
         "1 to focus file pane",
@@ -20,7 +21,9 @@ pub mod keys {
 
     use crate::{
         cmd::cmd::open_file_with_system_app,
-        file::file::toggle_selected_file,
+        file::file::{
+            get_files_for_dir, sort_file_paths_dirs_first_then_files, toggle_selected_file,
+        },
         input_action::input_action::{
             handle_create_file, handle_delete_file, handle_rename_file, InputAction,
         },
@@ -98,9 +101,21 @@ pub mod keys {
             'r' => handle_r_char(app_state),
             'c' => handle_c_char(app_state),
             's' => handle_s_char(app_state),
+            'H' => handle_uppercase_h_char(app_state),
             _ => {}
         }
         Ok("ok")
+    }
+
+    fn handle_uppercase_h_char(app_state: &mut AppState) {
+        app_state.message = String::from(format!(
+            "Hidden files shown: {:?}",
+            !app_state.show_hidden_files
+        ));
+        app_state.show_hidden_files = !app_state.show_hidden_files;
+        let new_files =
+            get_files_for_dir(&app_state.working_directory, app_state.show_hidden_files);
+        app_state.files = sort_file_paths_dirs_first_then_files(&new_files);
     }
 
     fn handle_s_char(app_state: &mut AppState) {
