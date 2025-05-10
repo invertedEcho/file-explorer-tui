@@ -67,7 +67,8 @@ pub mod utils {
         let delete_result = delete_file(file);
         match delete_result {
             Ok(_) => {
-                app_state.files = get_files_for_dir(&app_state.working_directory);
+                app_state.files =
+                    get_files_for_dir(&app_state.working_directory, app_state.show_hidden_files);
             }
             Err(err) => {
                 app_state.message = String::from(format!(
@@ -113,7 +114,7 @@ pub mod utils {
     }
 
     pub fn refresh_files_for_working_directory(app_state: &mut AppState) {
-        let files = get_files_for_dir(&app_state.working_directory);
+        let files = get_files_for_dir(&app_state.working_directory, app_state.show_hidden_files);
         let sorted_files = sort_file_paths_dirs_first_then_files(&files);
         app_state.files = sorted_files;
     }
