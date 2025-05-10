@@ -99,15 +99,17 @@ pub mod file {
                     is_dir,
                 };
             })
-            .filter(|file| {
-                if hidden_files {
-                    true
-                } else {
-                    !file.display_name.starts_with(".")
-                }
-            })
             .collect();
-        return files;
+
+        if hidden_files {
+            files
+        } else {
+            files
+                .iter()
+                .filter(|file| !file.display_name.starts_with("."))
+                .map(|f| f.clone())
+                .collect()
+        }
     }
 
     // TODO: Write unit tests for this function
