@@ -34,6 +34,7 @@ struct AppState {
     selected_files_list_state: ListState,
     show_cheatsheet: bool,
     show_selected_files_pane: bool,
+    show_hidden_files: bool,
 }
 
 fn main() -> Result<()> {
@@ -50,7 +51,9 @@ fn run(mut terminal: DefaultTerminal) -> Result<()> {
     // TODO: fall back to something sane
     let initial_directory = get_home_dir().expect("$HOME is set");
 
-    let initial_files = get_files_for_dir(&initial_directory);
+    let show_hidden_files = false;
+
+    let initial_files = get_files_for_dir(&initial_directory, show_hidden_files);
     let sorted_initial_files = sort_file_paths_dirs_first_then_files(&initial_files);
 
     // setup app state
@@ -67,6 +70,7 @@ fn run(mut terminal: DefaultTerminal) -> Result<()> {
         list_state_index_of_directory: HashMap::new(),
         show_cheatsheet: false,
         show_selected_files_pane: true,
+        show_hidden_files,
     };
 
     app_state

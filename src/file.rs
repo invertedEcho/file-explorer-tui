@@ -72,7 +72,7 @@ pub mod file {
         }
     }
 
-    pub fn get_files_for_dir(dir: &String) -> Vec<File> {
+    pub fn get_files_for_dir(dir: &String, hidden_files: bool) -> Vec<File> {
         let read_dir_result = fs::read_dir(dir).expect("Can read from dir");
 
         let files: Vec<File> = read_dir_result
@@ -98,6 +98,13 @@ pub mod file {
                     full_path,
                     is_dir,
                 };
+            })
+            .filter(|file| {
+                if hidden_files {
+                    true
+                } else {
+                    !file.display_name.starts_with(".")
+                }
             })
             .collect();
         return files;
