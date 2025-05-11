@@ -1,4 +1,3 @@
-use core::panic;
 use std::{
     collections::HashMap,
     sync::mpsc::{channel, Receiver, Sender},
@@ -78,7 +77,7 @@ fn run(mut terminal: DefaultTerminal) -> Result<()> {
 
     // FIX: we should have one receiver/sender pair for directory watcher and one for message bus (UI
     // message field)
-    let (sender_for_directory_watcher, receiver_for_directory_watcher) = channel();
+    let (mut sender_for_directory_watcher, receiver_for_directory_watcher) = channel();
     let sender_for_draw_widget_to_frame = sender_for_directory_watcher.clone();
 
     let mut app_state = AppState {
@@ -131,7 +130,9 @@ fn run(mut terminal: DefaultTerminal) -> Result<()> {
             Ok(val) => {
                 app_state_message.current_message = format!("message: {:?}", val);
             }
-            Err(err) => {}
+            Err(err) => {
+                panic!("{:?}", err)
+            }
         }
         terminal.draw(|frame| {
             draw_widgets_to_frame(frame, &mut app_state, &app_state_message.current_message)

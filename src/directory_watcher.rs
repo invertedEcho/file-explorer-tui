@@ -20,10 +20,11 @@ pub mod watcher {
         watcher
             .watch(Path::new(directory), RecursiveMode::Recursive)
             .expect("Can watch given directory");
+
         thread::sleep(Duration::from_secs(3));
         send_message_or_panic(
             &mut sender_for_directory_watcher,
-            "hello from setup_watcher!".to_string(),
+            "hello from setup_watcher".to_string(),
         );
 
         // we care about
@@ -35,25 +36,14 @@ pub mod watcher {
             match res {
                 Ok(event) => match event.kind {
                     notify::EventKind::Create(_) => {
-                        let _ = sender_for_directory_watcher
-                            .send("hello from setup_watcher!".to_string());
-                        // use the sender_new to send events
-                        if watch_for_hidden_files {
-                            let result =
-                                sender_for_directory_watcher.send("create_event!".to_string());
-                            match result {
-                                Ok(_) => {}
-                                Err(err) => {
-                                    panic!("{:?}", err);
-                                }
-                            }
-                            println!("source: {:?}", event.source());
-                        }
-                        println!("create event: {:?}", event)
+                        send_message_or_panic(
+                            &mut sender_for_directory_watcher,
+                            "create_event!".to_string(),
+                        );
                     }
                     _ => {}
                 },
-                Err(e) => println!("watch error: {:?}", e),
+                Err(e) => panic!("watch error: {:?}", e),
             }
         }
     }
