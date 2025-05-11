@@ -1,6 +1,7 @@
 pub mod widget {
     use crate::{
-        file::file::File, input_action::input_action::InputAction, keys::keys::KEYS, AppState,
+        file::file::File, input_action::input_action::InputAction, keys::keys::KEYS,
+        mpsc_utils::mpsc_utils::send_message_or_panic, AppState,
     };
 
     use ratatui::{
@@ -22,7 +23,11 @@ pub mod widget {
         .fg(Color::LightGreen);
 
     // Draws all widgets to the passed frame
-    pub fn draw_widgets_to_frame(frame: &mut Frame, app_state: &mut AppState) {
+    pub fn draw_widgets_to_frame(
+        frame: &mut Frame,
+        app_state: &mut AppState,
+        current_message: &String,
+    ) {
         let files_block_border_style = if app_state.pane == Pane::Files {
             Style::new().light_green()
         } else {
@@ -65,13 +70,13 @@ pub mod widget {
             if app_state.input_action == InputAction::None {
                 "Current message".to_string()
             } else {
-                app_state.message.clone()
+                current_message.clone()
             };
 
         let text = if app_state.input_action != InputAction::None {
             app_state.user_input.clone()
         } else {
-            app_state.message.clone()
+            current_message.clone()
         };
 
         let current_message_or_user_input_widget = Paragraph::new(text).block(
@@ -151,7 +156,10 @@ pub mod widget {
     pub fn reset_current_message_and_input(app_state: &mut AppState) {
         app_state.user_input = "".to_string();
         app_state.input_action = InputAction::None;
-        app_state.message = "".to_string();
+        send_message_or_panic(
+            &mut app_state.sender_for_draw_widget_function,
+            "".to_string(),
+        );
     }
 
     pub fn add_char_input(new_char: char, app_state: &mut AppState) {
