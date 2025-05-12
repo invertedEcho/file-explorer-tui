@@ -1,5 +1,5 @@
 [package]
-name = "file-explorer-rs"
+name = "file-explorer-tui"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,3 +7,5 @@ edition = "2021"
 color-eyre = "0.6.3"
 crossterm = "0.28.1"
 ratatui = "0.29.0"
+log = "0.4.27"
+flexi_logger = "0.30.1"
