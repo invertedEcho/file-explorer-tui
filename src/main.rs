@@ -1,8 +1,10 @@
+use log::{info, warn};
 use std::collections::HashMap;
 
 use color_eyre::Result;
 use input_action::input_action::InputAction;
 use keys::keys::handle_key_event;
+use logger::logger::setup_logger_handle;
 use ratatui::{widgets::ListState, DefaultTerminal};
 
 use env::env::get_home_dir;
@@ -14,6 +16,7 @@ mod env;
 mod file;
 mod input_action;
 mod keys;
+mod logger;
 mod utils;
 mod widget;
 
@@ -38,12 +41,16 @@ struct AppState {
 }
 
 fn main() -> Result<()> {
+    setup_logger_handle();
+    info!("file-explorer-tui is starting...");
+
     // installs error handling hook
     color_eyre::install()?;
 
     let terminal = ratatui::init();
     let result = run(terminal);
     ratatui::restore();
+    info!("file-explorer-tui is stopping...");
     result
 }
 
