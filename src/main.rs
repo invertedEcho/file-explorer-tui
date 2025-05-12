@@ -1,5 +1,6 @@
+use log::info;
+use std::collections::HashMap;
 use std::{
-    collections::HashMap,
     sync::mpsc::{channel, Receiver, Sender},
     thread,
 };
@@ -8,6 +9,7 @@ use color_eyre::Result;
 use directory_watcher::watcher::setup_directory_watcher;
 use input_action::input_action::InputAction;
 use keys::keys::handle_key_event;
+use logger::logger::setup_logger_handle;
 use ratatui::{widgets::ListState, DefaultTerminal};
 
 use env::env::get_home_dir;
@@ -20,6 +22,7 @@ mod env;
 mod file;
 mod input_action;
 mod keys;
+mod logger;
 mod mpsc_utils;
 mod utils;
 mod widget;
@@ -57,12 +60,16 @@ struct AppStateMessage {
 }
 
 fn main() -> Result<()> {
+    setup_logger_handle();
+    info!("file-explorer-tui is starting...");
+
     // installs error handling hook
     color_eyre::install()?;
 
     let terminal = ratatui::init();
     let result = run(terminal);
     ratatui::restore();
+    info!("file-explorer-tui is stopping...");
     result
 }
 
@@ -77,7 +84,7 @@ fn run(mut terminal: DefaultTerminal) -> Result<()> {
 
     // FIX: we should have one receiver/sender pair for directory watcher and one for message bus (UI
     // message field)
-    let (mut sender_for_directory_watcher, receiver_for_directory_watcher) = channel();
+    let (sender_for_directory_watcher, receiver_for_directory_watcher) = channel();
     let sender_for_draw_widget_to_frame = sender_for_directory_watcher.clone();
 
     let mut app_state = AppState {
