@@ -22,7 +22,7 @@ pub mod widget {
         .add_modifier(Modifier::BOLD)
         .fg(Color::LightGreen);
 
-    // Draws all widgets to the passed frame
+    // Draws all needed widgets to the passed frame
     pub fn draw_widgets_to_frame(
         frame: &mut Frame,
         app_state: &mut AppState,

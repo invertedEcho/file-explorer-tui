@@ -1,9 +1,10 @@
 use log::info;
 use std::collections::HashMap;
 use std::{
-    sync::mpsc::{channel, Receiver, Sender},
+    sync::mpsc::{channel, Sender},
     thread,
 };
+use utils::utils::refresh_files_for_working_directory;
 
 use color_eyre::Result;
 use directory_watcher::watcher::setup_directory_watcher;
@@ -50,7 +51,6 @@ struct AppState {
     show_cheatsheet: bool,
     show_selected_files_pane: bool,
     show_hidden_files: bool,
-    receiver_for_directory_watcher: Receiver<String>,
     sender_for_draw_widget_function: Sender<String>,
 }
 
@@ -100,7 +100,6 @@ fn run(mut terminal: DefaultTerminal) -> Result<()> {
         show_cheatsheet: false,
         show_selected_files_pane: true,
         show_hidden_files,
-        receiver_for_directory_watcher,
         sender_for_draw_widget_function: sender_for_draw_widget_to_frame,
     };
 
@@ -123,7 +122,7 @@ fn run(mut terminal: DefaultTerminal) -> Result<()> {
         .file_list_state
         .select(list_state_index_of_initial_directory);
 
-    thread::spawn(move || {
+    let join_handle = thread::spawn(move || {
         setup_directory_watcher(
             &initial_directory,
             show_hidden_files,
@@ -132,28 +131,25 @@ fn run(mut terminal: DefaultTerminal) -> Result<()> {
     });
 
     loop {
-        let maybe_result_from_sender = app_state.receiver_for_directory_watcher.try_recv();
+        let maybe_result_from_sender = receiver_for_directory_watcher.try_recv();
         match maybe_result_from_sender {
-            Ok(val) => {
-                app_state_message.current_message = format!("message: {:?}", val);
+            Ok(result) => {
+                if result == "create_event" {
+                    refresh_files_for_working_directory(&mut app_state);
+                } else {
+                    app_state_message.current_message = result;
+                }
             }
-            Err(err) => {
-                panic!("{:?}", err)
-            }
+            Err(_) => {}
         }
         terminal.draw(|frame| {
             draw_widgets_to_frame(frame, &mut app_state, &app_state_message.current_message)
         })?;
 
-        let handle_key_event_result = handle_key_event(&mut app_state);
-        match handle_key_event_result {
-            Ok(value) => {
-                // TODO: eehhhh i dont know about this
-                if value == "quit" {
-                    break Ok(());
-                }
-            }
-            Err(_) => continue,
+        let result = handle_key_event(&mut app_state);
+
+        if result == "quit" {
+            break Ok(());
         }
     }
 }

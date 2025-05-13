@@ -9,7 +9,7 @@ pub mod keys {
         "D to delete selected file (or when in selected files pane all files)",
         "r to rename currently selected file",
         "q to quit the tui",
-        "h to toggle hidden files",
+        "H to toggle hidden files",
         "c to toggle cheatsheet",
         "s to toggle selected files pane",
         "1 to focus file pane",
@@ -18,7 +18,9 @@ pub mod keys {
         "Esc in input mode to abort current action",
     ];
 
-    use crossterm::event::{self, Event, KeyCode};
+    use std::time::Duration;
+
+    use crossterm::event::{poll, read, Event, KeyCode};
 
     use crate::{
         cmd::cmd::open_file_with_system_app,
@@ -40,18 +42,22 @@ pub mod keys {
         AppState,
     };
 
-    pub fn handle_key_event(app_state: &mut AppState) -> Result<&str, ()> {
-        let event = event::read().expect("can read event");
-        if let Event::Key(key) = event {
-            match key.code {
-                KeyCode::Backspace => handle_backspace(app_state),
-                KeyCode::Char(char) => return handle_char(char, app_state),
-                KeyCode::Esc => handle_escape(app_state),
-                KeyCode::Enter => handle_enter(app_state),
-                _ => {}
+    pub fn handle_key_event(app_state: &mut AppState) -> &str {
+        let maybe_key_event =
+            poll(Duration::from_millis(100)).expect("can use poll to check if key event");
+        if maybe_key_event {
+            let event = read().expect("if poll returned true we should be able to read key event");
+            if let Event::Key(key) = event {
+                match key.code {
+                    KeyCode::Char(char) => return handle_char(char, app_state),
+                    KeyCode::Backspace => handle_backspace(app_state),
+                    KeyCode::Esc => handle_escape(app_state),
+                    KeyCode::Enter => handle_enter(app_state),
+                    _ => return "ok",
+                }
             }
         }
-        return Ok("ok");
+        return "ok";
     }
 
     fn handle_escape(app_state: &mut AppState) {
@@ -92,10 +98,10 @@ pub mod keys {
         };
     }
 
-    fn handle_char(char: char, app_state: &mut AppState) -> Result<&str, ()> {
+    fn handle_char(char: char, app_state: &mut AppState) -> &str {
         if app_state.input_action != InputAction::None {
             add_char_input(char, app_state);
-            return Ok("ok");
+            return "ok";
         }
 
         match char {
@@ -116,7 +122,7 @@ pub mod keys {
             'H' => handle_uppercase_h_char(app_state),
             _ => {}
         }
-        Ok("ok")
+        "ok"
     }
 
     fn handle_uppercase_h_char(app_state: &mut AppState) {
@@ -180,11 +186,11 @@ pub mod keys {
         }
     }
 
-    fn handle_q_char(app_state: &mut AppState) -> Result<&str, ()> {
+    fn handle_q_char(app_state: &mut AppState) -> &str {
         if app_state.input_action == InputAction::None {
-            return Ok("quit");
+            return "quit";
         }
-        return Ok("ok");
+        return "ok";
     }
 
     fn handle_space(app_state: &mut AppState) {
