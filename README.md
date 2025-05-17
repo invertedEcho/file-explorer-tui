@@ -15,6 +15,7 @@ mainly to
 
 ### Features
 
+- Live reload when files are created/deleted via notify crate
 - Cheatsheet to see all keybinds (press c)
 - Create files
 - Delete files
