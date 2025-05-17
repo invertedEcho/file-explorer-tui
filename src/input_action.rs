@@ -27,11 +27,11 @@ pub mod input_action {
         let result = create_file(&full_path);
         match result {
             Ok(msg) => {
-                send_message_or_panic(&mut app_state.sender_for_draw_widget_function, msg);
+                send_message_or_panic(&mut app_state.sender_for_ui_message, msg);
             }
             Err(error) => {
                 send_message_or_panic(
-                    &mut app_state.sender_for_draw_widget_function,
+                    &mut app_state.sender_for_ui_message,
                     format!("Failed to create file/dir: {}", error),
                 );
             }

@@ -73,7 +73,7 @@ pub mod utils {
             }
             Err(err) => {
                 send_message_or_panic(
-                    &mut app_state.sender_for_draw_widget_function,
+                    &mut app_state.sender_for_ui_message,
                     String::from(format!(
                         "Failed to delete file {:?}\nError: {:?}",
                         file.full_path, err
@@ -110,7 +110,7 @@ pub mod utils {
         if failed_count != 0 {
             let thing = if failed_count == 1 { "file" } else { "files" };
             send_message_or_panic(
-                &mut app_state.sender_for_draw_widget_function,
+                &mut app_state.sender_for_ui_message,
                 format!("Failed to delete {} {}.", failed_count, thing),
             );
         } else {

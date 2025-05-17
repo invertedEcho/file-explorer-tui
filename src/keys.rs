@@ -83,13 +83,13 @@ pub mod keys {
                 match result {
                     Ok(()) => {
                         send_message_or_panic(
-                            &mut app_state.sender_for_draw_widget_function,
+                            &mut app_state.sender_for_ui_message,
                             "Successfully renamed file!".to_string(),
                         );
                     }
                     Err(val) => {
                         send_message_or_panic(
-                            &mut app_state.sender_for_draw_widget_function,
+                            &mut app_state.sender_for_ui_message,
                             format!("Failed to rename file: {}", val),
                         );
                     }
@@ -127,7 +127,7 @@ pub mod keys {
 
     fn handle_uppercase_h_char(app_state: &mut AppState) {
         send_message_or_panic(
-            &mut app_state.sender_for_draw_widget_function,
+            &mut app_state.sender_for_ui_message,
             String::from(format!(
                 "Hidden files shown: {:?}",
                 !app_state.show_hidden_files
@@ -152,7 +152,7 @@ pub mod keys {
         let file = get_selected_item_from_list_state(&app_state.file_list_state, &app_state.files);
 
         send_message_or_panic(
-            &mut app_state.sender_for_draw_widget_function,
+            &mut app_state.sender_for_ui_message,
             "Please enter the new filename. Esc to abort".to_string(),
         );
 
@@ -229,7 +229,7 @@ pub mod keys {
                 app_state.input_action = InputAction::DeleteFile;
 
                 send_message_or_panic(
-                    &mut app_state.sender_for_draw_widget_function,
+                    &mut app_state.sender_for_ui_message,
                     String::from(format!(
                         "Please confirm deletion of file {} with y/yes. Esc to abort",
                         file.full_path
@@ -239,7 +239,7 @@ pub mod keys {
             Pane::SelectedFiles => {
                 app_state.input_action = InputAction::DeleteFile;
                 send_message_or_panic(
-                    &mut app_state.sender_for_draw_widget_function,
+                    &mut app_state.sender_for_ui_message,
                     "Please confirm deletion of all selected files with y/yes. Esc to abort"
                         .to_string(),
                 )
@@ -250,7 +250,7 @@ pub mod keys {
     fn handle_a_char(app_state: &mut AppState) {
         app_state.input_action = InputAction::CreateFile;
         send_message_or_panic(
-            &mut app_state.sender_for_draw_widget_function,
+            &mut app_state.sender_for_ui_message,
             "Enter the name for new filename: (Tip: use a trailing slash to create a directory)"
                 .into(),
         );
@@ -265,10 +265,7 @@ pub mod keys {
         match open_file_with_system_app_result {
             Ok(_) => {}
             Err(error) => {
-                send_message_or_panic(
-                    &mut app_state.sender_for_draw_widget_function,
-                    error.to_string(),
-                );
+                send_message_or_panic(&mut app_state.sender_for_ui_message, error.to_string());
             }
         }
     }

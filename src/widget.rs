@@ -156,10 +156,7 @@ pub mod widget {
     pub fn reset_current_message_and_input(app_state: &mut AppState) {
         app_state.user_input = "".to_string();
         app_state.input_action = InputAction::None;
-        send_message_or_panic(
-            &mut app_state.sender_for_draw_widget_function,
-            "".to_string(),
-        );
+        send_message_or_panic(&mut app_state.sender_for_ui_message, "".to_string());
     }
 
     pub fn add_char_input(new_char: char, app_state: &mut AppState) {

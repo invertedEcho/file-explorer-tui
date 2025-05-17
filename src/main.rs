@@ -1,10 +1,8 @@
 use log::info;
+use notify::Watcher;
 use std::collections::HashMap;
-use std::{
-    sync::mpsc::{channel, Sender},
-    thread,
-};
-use utils::utils::refresh_files_for_working_directory;
+use std::path::Path;
+use std::sync::mpsc::{channel, Sender};
 
 use color_eyre::Result;
 use directory_watcher::watcher::setup_directory_watcher;
@@ -51,11 +49,11 @@ struct AppState {
     show_cheatsheet: bool,
     show_selected_files_pane: bool,
     show_hidden_files: bool,
-    sender_for_draw_widget_function: Sender<String>,
+    sender_for_ui_message: Sender<String>,
 }
 
 struct AppStateMessage {
-    previous_messages: Vec<String>,
+    // previous_messages: Vec<String>,
     current_message: String,
 }
 
@@ -82,10 +80,7 @@ fn run(mut terminal: DefaultTerminal) -> Result<()> {
     let initial_files = get_files_for_dir(&initial_directory, show_hidden_files);
     let sorted_initial_files = sort_file_paths_dirs_first_then_files(&initial_files);
 
-    // FIX: we should have one receiver/sender pair for directory watcher and one for message bus (UI
-    // message field)
-    let (sender_for_directory_watcher, receiver_for_directory_watcher) = channel();
-    let sender_for_draw_widget_to_frame = sender_for_directory_watcher.clone();
+    let (sender_for_ui_message, receiver_for_ui_message) = channel();
 
     let mut app_state = AppState {
         files: sorted_initial_files,
@@ -100,12 +95,12 @@ fn run(mut terminal: DefaultTerminal) -> Result<()> {
         show_cheatsheet: false,
         show_selected_files_pane: true,
         show_hidden_files,
-        sender_for_draw_widget_function: sender_for_draw_widget_to_frame,
+        sender_for_ui_message,
     };
 
     let mut app_state_message = AppStateMessage {
         current_message: String::from("Initial message"),
-        previous_messages: vec![],
+        // previous_messages: vec![],
     };
 
     app_state
@@ -122,34 +117,49 @@ fn run(mut terminal: DefaultTerminal) -> Result<()> {
         .file_list_state
         .select(list_state_index_of_initial_directory);
 
-    let join_handle = thread::spawn(move || {
-        setup_directory_watcher(
-            &initial_directory,
-            show_hidden_files,
-            sender_for_directory_watcher,
-        );
-    });
+    let (mut notify_watcher, directory_watcher_receiver) =
+        setup_directory_watcher(initial_directory);
 
     loop {
-        let maybe_result_from_sender = receiver_for_directory_watcher.try_recv();
-        match maybe_result_from_sender {
-            Ok(result) => {
-                if result == "create_event" {
-                    refresh_files_for_working_directory(&mut app_state);
-                } else {
-                    app_state_message.current_message = result;
+        let maybe_directory_watcher_receiver_result = directory_watcher_receiver.try_recv();
+
+        match maybe_directory_watcher_receiver_result {
+            Ok(result_event_or_error) => {
+                info!("result_event_or_error: {:?}", result_event_or_error);
+            }
+            Err(error) => {
+                // Ignore Empty message
+                if error.to_string() != "receiving on an empty channel" {
+                    info!("error from try_recv: {:?}", error);
                 }
             }
-            Err(_) => {}
         }
+        let previous_working_directory = app_state.working_directory.clone();
+
         terminal.draw(|frame| {
             draw_widgets_to_frame(frame, &mut app_state, &app_state_message.current_message)
         })?;
 
-        let result = handle_key_event(&mut app_state);
-
-        if result == "quit" {
+        let handle_key_event_result = handle_key_event(&mut app_state);
+        if handle_key_event_result == "quit" {
             break Ok(());
+        }
+
+        // UI Message stuff
+        let maybe_result_from_ui_message_receiver = receiver_for_ui_message.try_recv();
+        match maybe_result_from_ui_message_receiver {
+            Ok(result) => {
+                app_state_message.current_message = result;
+            }
+            Err(_) => {}
+        }
+
+        // Directory watcher stuff
+        // if our working directory changed, we need to stop previous directory watcher and start new
+        // one.
+        if previous_working_directory != app_state.working_directory {
+            info!("Our working directory changed! Stopping previous notify_watcher and starting a new one");
+            notify_watcher.unwatch(Path::new(&previous_working_directory));
         }
     }
 }
