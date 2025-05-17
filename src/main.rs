@@ -1,11 +1,11 @@
-use log::info;
+use log::{error, info};
 use notify::Watcher;
 use std::collections::HashMap;
 use std::path::Path;
 use std::sync::mpsc::{channel, Sender};
 
 use color_eyre::Result;
-use directory_watcher::watcher::setup_directory_watcher;
+use directory_watcher::watcher::{handle_notify_watcher_event, setup_directory_watcher};
 use input_action::input_action::InputAction;
 use keys::keys::handle_key_event;
 use logger::logger::setup_logger_handle;
@@ -124,9 +124,14 @@ fn run(mut terminal: DefaultTerminal) -> Result<()> {
         let maybe_directory_watcher_receiver_result = directory_watcher_receiver.try_recv();
 
         match maybe_directory_watcher_receiver_result {
-            Ok(result_event_or_error) => {
-                info!("result_event_or_error: {:?}", result_event_or_error);
-            }
+            Ok(result_event_or_error) => match result_event_or_error {
+                Ok(event) => handle_notify_watcher_event(event, &mut app_state),
+
+                // what errors are these?
+                Err(error) => {
+                    error!("error from result_event_or_error: {:?}", error);
+                }
+            },
             Err(error) => {
                 // Ignore Empty message
                 if error.to_string() != "receiving on an empty channel" {
@@ -159,7 +164,29 @@ fn run(mut terminal: DefaultTerminal) -> Result<()> {
         // one.
         if previous_working_directory != app_state.working_directory {
             info!("Our working directory changed! Stopping previous notify_watcher and starting a new one");
-            notify_watcher.unwatch(Path::new(&previous_working_directory));
+            let unwatch_result = notify_watcher.unwatch(Path::new(&previous_working_directory));
+            match unwatch_result {
+                Ok(_) => {
+                    let new_watch_result = notify_watcher.watch(
+                        Path::new(&app_state.working_directory),
+                        notify::RecursiveMode::NonRecursive,
+                    );
+                    match new_watch_result {
+                        Ok(_) => {
+                            info!(
+                                "Successfully watching new working directory: {:?}",
+                                app_state.working_directory
+                            )
+                        }
+                        Err(error) => {
+                            error!("Failed to watch new working directory: {:?}", error);
+                        }
+                    }
+                }
+                Err(error) => {
+                    error!("Failed to unwatch directory: {:?}", error);
+                }
+            }
         }
     }
 }

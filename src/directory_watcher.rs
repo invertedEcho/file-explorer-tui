@@ -2,7 +2,13 @@ pub mod watcher {
     use std::{path::Path, sync::mpsc::Receiver};
 
     use log::{info, warn};
-    use notify::{Config, Error, INotifyWatcher, RecommendedWatcher, RecursiveMode, Watcher};
+    use notify::{
+        Config, Error, Event,
+        EventKind::{Create, Remove},
+        INotifyWatcher, RecommendedWatcher, RecursiveMode, Watcher,
+    };
+
+    use crate::{utils::utils::refresh_files_for_working_directory, AppState};
 
     pub fn setup_directory_watcher(
         initial_directory: String,
@@ -30,5 +36,14 @@ pub mod watcher {
         // We need to return the watcher too, otherwise it will be dropped and the receiver is
         // disconnected
         return (watcher, receiver);
+    }
+
+    pub fn handle_notify_watcher_event(event: Event, app_state: &mut AppState) {
+        match event.kind {
+            Create(_) | Remove(_) => {
+                refresh_files_for_working_directory(app_state);
+            }
+            _ => {}
+        }
     }
 }
