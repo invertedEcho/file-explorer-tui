@@ -11,6 +11,7 @@ pub mod input_action {
 
     use crate::{
         file::file::create_file,
+        mpsc_utils::mpsc_utils::send_message_or_panic,
         utils::utils::{
             delete_currently_selected_file, delete_selected_files,
             refresh_files_for_working_directory,
@@ -26,10 +27,13 @@ pub mod input_action {
         let result = create_file(&full_path);
         match result {
             Ok(msg) => {
-                app_state.message = msg;
+                send_message_or_panic(&mut app_state.sender_for_ui_message, msg);
             }
             Err(error) => {
-                app_state.message = format!("Failed to create file/dir: {}", error);
+                send_message_or_panic(
+                    &mut app_state.sender_for_ui_message,
+                    format!("Failed to create file/dir: {}", error),
+                );
             }
         }
         refresh_files_for_working_directory(app_state);

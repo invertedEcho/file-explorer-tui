@@ -9,7 +9,7 @@ pub mod keys {
         "D to delete selected file (or when in selected files pane all files)",
         "r to rename currently selected file",
         "q to quit the tui",
-        "h to toggle hidden files",
+        "H to toggle hidden files",
         "c to toggle cheatsheet",
         "s to toggle selected files pane",
         "1 to focus file pane",
@@ -17,7 +17,10 @@ pub mod keys {
         "Space to add/remove file to selected files pane",
         "Esc in input mode to abort current action",
     ];
-    use crossterm::event::{self, Event, KeyCode};
+
+    use std::time::Duration;
+
+    use crossterm::event::{poll, read, Event, KeyCode};
 
     use crate::{
         cmd::cmd::open_file_with_system_app,
@@ -27,6 +30,7 @@ pub mod keys {
         input_action::input_action::{
             handle_create_file, handle_delete_file, handle_rename_file, InputAction,
         },
+        mpsc_utils::mpsc_utils::send_message_or_panic,
         utils::utils::{
             enter_directory, get_is_in_input_mode, navigate_to_parent_directory,
             refresh_list_state_index_of_directory,
@@ -38,18 +42,22 @@ pub mod keys {
         AppState,
     };
 
-    pub fn handle_key_event(app_state: &mut AppState) -> Result<&str, ()> {
-        let event = event::read().expect("can read event");
-        if let Event::Key(key) = event {
-            match key.code {
-                KeyCode::Backspace => handle_backspace(app_state),
-                KeyCode::Char(char) => return handle_char(char, app_state),
-                KeyCode::Esc => handle_escape(app_state),
-                KeyCode::Enter => handle_enter(app_state),
-                _ => {}
+    pub fn handle_key_event(app_state: &mut AppState) -> &str {
+        let maybe_key_event =
+            poll(Duration::from_millis(100)).expect("can use poll to check if key event");
+        if maybe_key_event {
+            let event = read().expect("if poll returned true we should be able to read key event");
+            if let Event::Key(key) = event {
+                match key.code {
+                    KeyCode::Char(char) => return handle_char(char, app_state),
+                    KeyCode::Backspace => handle_backspace(app_state),
+                    KeyCode::Esc => handle_escape(app_state),
+                    KeyCode::Enter => handle_enter(app_state),
+                    _ => return "ok",
+                }
             }
         }
-        return Ok("ok");
+        return "ok";
     }
 
     fn handle_escape(app_state: &mut AppState) {
@@ -73,17 +81,27 @@ pub mod keys {
             InputAction::RenameFile => {
                 let result = handle_rename_file(app_state);
                 match result {
-                    Ok(()) => app_state.message = "Successfully renamed file!".to_string(),
-                    Err(val) => app_state.message = format!("Failed to rename file: {}", val),
+                    Ok(()) => {
+                        send_message_or_panic(
+                            &mut app_state.sender_for_ui_message,
+                            "Successfully renamed file!".to_string(),
+                        );
+                    }
+                    Err(val) => {
+                        send_message_or_panic(
+                            &mut app_state.sender_for_ui_message,
+                            format!("Failed to rename file: {}", val),
+                        );
+                    }
                 }
             }
         };
     }
 
-    fn handle_char(char: char, app_state: &mut AppState) -> Result<&str, ()> {
+    fn handle_char(char: char, app_state: &mut AppState) -> &str {
         if app_state.input_action != InputAction::None {
             add_char_input(char, app_state);
-            return Ok("ok");
+            return "ok";
         }
 
         match char {
@@ -104,14 +122,18 @@ pub mod keys {
             'H' => handle_uppercase_h_char(app_state),
             _ => {}
         }
-        Ok("ok")
+        "ok"
     }
 
     fn handle_uppercase_h_char(app_state: &mut AppState) {
-        app_state.message = String::from(format!(
-            "Hidden files shown: {:?}",
-            !app_state.show_hidden_files
-        ));
+        send_message_or_panic(
+            &mut app_state.sender_for_ui_message,
+            String::from(format!(
+                "Hidden files shown: {:?}",
+                !app_state.show_hidden_files
+            )),
+        );
+
         app_state.show_hidden_files = !app_state.show_hidden_files;
         let new_files =
             get_files_for_dir(&app_state.working_directory, app_state.show_hidden_files);
@@ -128,7 +150,12 @@ pub mod keys {
 
     fn handle_r_char(app_state: &mut AppState) {
         let file = get_selected_item_from_list_state(&app_state.file_list_state, &app_state.files);
-        app_state.message = "Please enter the new filename. Esc to abort".to_string();
+
+        send_message_or_panic(
+            &mut app_state.sender_for_ui_message,
+            "Please enter the new filename. Esc to abort".to_string(),
+        );
+
         app_state.input_action = InputAction::RenameFile;
         app_state.user_input = file.full_path.clone();
     }
@@ -159,11 +186,11 @@ pub mod keys {
         }
     }
 
-    fn handle_q_char(app_state: &mut AppState) -> Result<&str, ()> {
+    fn handle_q_char(app_state: &mut AppState) -> &str {
         if app_state.input_action == InputAction::None {
-            return Ok("quit");
+            return "quit";
         }
-        return Ok("ok");
+        return "ok";
     }
 
     fn handle_space(app_state: &mut AppState) {
@@ -200,35 +227,46 @@ pub mod keys {
                 let file =
                     get_selected_item_from_list_state(&app_state.file_list_state, &app_state.files);
                 app_state.input_action = InputAction::DeleteFile;
-                app_state.message = String::from(format!(
-                    "Please confirm deletion of file {} with y/yes. Esc to abort",
-                    file.full_path
-                ));
+
+                send_message_or_panic(
+                    &mut app_state.sender_for_ui_message,
+                    String::from(format!(
+                        "Please confirm deletion of file {} with y/yes. Esc to abort",
+                        file.full_path
+                    )),
+                );
             }
             Pane::SelectedFiles => {
                 app_state.input_action = InputAction::DeleteFile;
-                app_state.message =
+                send_message_or_panic(
+                    &mut app_state.sender_for_ui_message,
                     "Please confirm deletion of all selected files with y/yes. Esc to abort"
-                        .to_string();
+                        .to_string(),
+                )
             }
         }
     }
 
     fn handle_a_char(app_state: &mut AppState) {
         app_state.input_action = InputAction::CreateFile;
-        app_state.message =
+        send_message_or_panic(
+            &mut app_state.sender_for_ui_message,
             "Enter the name for new filename: (Tip: use a trailing slash to create a directory)"
-                .into();
+                .into(),
+        );
     }
 
     fn handle_o_char(app_state: &mut AppState) {
         let selected_file =
             get_selected_item_from_list_state(&app_state.file_list_state, &app_state.files);
         let full_path_of_selected_file = &selected_file.full_path;
-        let result = open_file_with_system_app(&full_path_of_selected_file);
-        match result {
+        let open_file_with_system_app_result =
+            open_file_with_system_app(&full_path_of_selected_file);
+        match open_file_with_system_app_result {
             Ok(_) => {}
-            Err(err) => app_state.message = err.to_string(),
+            Err(error) => {
+                send_message_or_panic(&mut app_state.sender_for_ui_message, error.to_string());
+            }
         }
     }
 }

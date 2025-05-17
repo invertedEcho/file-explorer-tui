@@ -5,6 +5,7 @@ pub mod utils {
             sort_file_paths_dirs_first_then_files,
         },
         input_action::input_action::InputAction,
+        mpsc_utils::mpsc_utils::send_message_or_panic,
         widget::widget::{
             get_selected_item_from_list_state, reset_current_message_and_input, Pane,
         },
@@ -71,10 +72,13 @@ pub mod utils {
                     get_files_for_dir(&app_state.working_directory, app_state.show_hidden_files);
             }
             Err(err) => {
-                app_state.message = String::from(format!(
-                    "Failed to delete file {:?}\nError: {:?}",
-                    file.full_path, err
-                ));
+                send_message_or_panic(
+                    &mut app_state.sender_for_ui_message,
+                    String::from(format!(
+                        "Failed to delete file {:?}\nError: {:?}",
+                        file.full_path, err
+                    )),
+                );
             }
         }
         reset_current_message_and_input(app_state);
@@ -105,7 +109,10 @@ pub mod utils {
         }
         if failed_count != 0 {
             let thing = if failed_count == 1 { "file" } else { "files" };
-            app_state.message = format!("Failed to delete {} {}.", failed_count, thing);
+            send_message_or_panic(
+                &mut app_state.sender_for_ui_message,
+                format!("Failed to delete {} {}.", failed_count, thing),
+            );
         } else {
             reset_current_message_and_input(app_state);
         }
