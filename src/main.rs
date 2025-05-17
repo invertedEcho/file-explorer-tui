@@ -27,7 +27,6 @@ mod utils;
 mod widget;
 
 // TODO:
-// fix: hot-reload of files via watcher or just simple key to reload?
 // fix: truncate filename in deletion message (and other places too)
 //
 // IDEAS:
