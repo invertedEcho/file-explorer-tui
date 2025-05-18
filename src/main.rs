@@ -28,6 +28,7 @@ mod widget;
 
 // TODO:
 // fix: truncate filename in deletion message (and other places too)
+// fix: permission errors (navigate into /root)
 //
 // IDEAS:
 // - config support to edit keybinds also interactive ui in tui itself to edit these
