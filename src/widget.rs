@@ -13,7 +13,7 @@ pub mod widget {
     };
 
     #[derive(PartialEq, Debug)]
-    pub enum Pane {
+    pub enum Window {
         Files,
         SelectedFiles,
     }
@@ -28,7 +28,7 @@ pub mod widget {
         app_state: &mut AppState,
         current_message: &String,
     ) {
-        let files_block_border_style = if app_state.pane == Pane::Files {
+        let files_block_border_style = if app_state.current_window == Window::Files {
             Style::new().light_green()
         } else {
             Style::new()
@@ -55,7 +55,7 @@ pub mod widget {
             Layout::vertical([Constraint::Percentage(90), Constraint::Percentage(10)]);
         let [upper_layout, lower_layout] = root_layout.areas(frame.area());
 
-        let constraints_for_inner_upper_layout = if app_state.show_selected_files_pane {
+        let constraints_for_inner_upper_layout = if app_state.show_selected_files_window {
             vec![Constraint::Percentage(70), Constraint::Percentage(30)]
         } else {
             vec![Constraint::Percentage(100)]
@@ -98,14 +98,14 @@ pub mod widget {
             &mut app_state.file_list_state,
         );
 
-        if app_state.show_selected_files_pane {
+        if app_state.show_selected_files_window {
             let selected_files_list_item: Vec<ListItem> = app_state
                 .selected_files
                 .iter()
                 .map(|selected_file| ListItem::new(selected_file.full_path.clone()))
                 .collect();
 
-            let selected_files_block_style = if app_state.pane == Pane::SelectedFiles {
+            let selected_files_block_style = if app_state.current_window == Window::SelectedFiles {
                 Style::new().light_green()
             } else {
                 Style::new()
