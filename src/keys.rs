@@ -1,5 +1,5 @@
 pub mod keys {
-    pub const KEYS: [&str; 16] = [
+    pub const KEYS: [&str; 17] = [
         "j to navigate down",
         "k to navigate up",
         "l to enter directory",
@@ -14,7 +14,8 @@ pub mod keys {
         "s to toggle selected files window",
         "1 to focus 'Files' window",
         "2 to focus 'Selected files' window",
-        "Space to add/remove file to 'Selected files' window",
+        "In 'Files': Space to add/remove file to 'Selected files' window",
+        "In 'Selected files': Space to remove selected from the window",
         "Esc in input mode to abort current action",
     ];
 
@@ -64,6 +65,8 @@ pub mod keys {
         let is_in_input_mode = get_is_in_input_mode(app_state);
         if is_in_input_mode {
             reset_current_message_and_input(app_state);
+        } else if app_state.show_cheatsheet {
+            app_state.show_cheatsheet = !app_state.show_cheatsheet;
         }
     }
 
@@ -195,14 +198,31 @@ pub mod keys {
     }
 
     fn handle_space(app_state: &mut AppState) {
-        let selected_file_index = app_state.file_list_state.selected();
-        let selected_file = app_state
-            .files
-            .get(selected_file_index.expect("there should be a selected file"))
-            .expect("the selected file should exist");
+        match app_state.current_window {
+            Window::Files => {
+                let selected_file_index = app_state.file_list_state.selected();
+                let selected_file = app_state
+                    .files
+                    .get(selected_file_index.expect("there should be a selected file"))
+                    .expect("[files_window]: the selected file should exist");
 
-        let new_selected_files = toggle_selected_file(&app_state.selected_files, selected_file);
-        app_state.selected_files = new_selected_files;
+                let new_selected_files =
+                    toggle_selected_file(&app_state.selected_files, selected_file);
+                app_state.selected_files = new_selected_files;
+            }
+            Window::SelectedFiles => {
+                let maybe_index = app_state.selected_files_list_state.selected();
+                if let Some(index) = maybe_index {
+                    let selected_file = app_state
+                        .selected_files
+                        .get(index)
+                        .expect("[selected_file_window]: the selected file should exist");
+                    let new_selected_files =
+                        toggle_selected_file(&app_state.selected_files, selected_file);
+                    app_state.selected_files = new_selected_files;
+                }
+            }
+        }
     }
 
     fn handle_one_char(app_state: &mut AppState) {
