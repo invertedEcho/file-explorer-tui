@@ -3,8 +3,9 @@ pub mod watcher {
 
     use log::{info, warn};
     use notify::{
+        event::ModifyKind,
         Config, Error, Event,
-        EventKind::{Create, Remove},
+        EventKind::{Create, Modify, Remove},
         INotifyWatcher, RecommendedWatcher, RecursiveMode, Watcher,
     };
 
@@ -43,6 +44,12 @@ pub mod watcher {
             Create(_) | Remove(_) => {
                 refresh_files_for_working_directory(app_state);
             }
+            Modify(modify_kind) => match modify_kind {
+                ModifyKind::Name(_) => {
+                    refresh_files_for_working_directory(app_state);
+                }
+                _ => {}
+            },
             _ => {}
         }
     }
