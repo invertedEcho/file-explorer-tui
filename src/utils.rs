@@ -7,7 +7,7 @@ pub mod utils {
         input_action::input_action::InputAction,
         mpsc_utils::mpsc_utils::send_message_or_panic,
         widget::widget::{
-            get_selected_item_from_list_state, reset_current_message_and_input, Pane,
+            get_selected_item_from_list_state, reset_current_message_and_input, Window,
         },
         AppState,
     };
@@ -142,13 +142,13 @@ pub mod utils {
         app_state.files = sorted_files;
     }
 
-    pub fn refresh_list_state_index_of_directory(app_state: &mut AppState, current_pane: Pane) {
+    pub fn refresh_list_state_index_of_directory(app_state: &mut AppState, current_window: Window) {
         let new_index;
-        match current_pane {
-            Pane::Files => {
+        match current_window {
+            Window::Files => {
                 new_index = app_state.file_list_state.selected().or(Some(0));
             }
-            Pane::SelectedFiles => {
+            Window::SelectedFiles => {
                 new_index = app_state.selected_files_list_state.selected().or(Some(0));
             }
         }

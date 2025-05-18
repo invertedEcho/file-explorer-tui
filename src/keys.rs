@@ -6,15 +6,15 @@ pub mod keys {
         "h or - to navigate to the parent directory",
         "a to create file",
         "o to open selected file",
-        "D to delete selected file (or when in selected files pane all files)",
+        "D to delete selected file (or when in selected files window all selected files)",
         "r to rename currently selected file",
         "q to quit the tui",
         "H to toggle hidden files",
         "c to toggle cheatsheet",
-        "s to toggle selected files pane",
-        "1 to focus file pane",
-        "2 to focus selected files pane",
-        "Space to add/remove file to selected files pane",
+        "s to toggle selected files window",
+        "1 to focus 'Files' window",
+        "2 to focus 'Selected files' window",
+        "Space to add/remove file to 'Selected files' window",
         "Esc in input mode to abort current action",
     ];
 
@@ -37,7 +37,7 @@ pub mod keys {
         },
         widget::widget::{
             add_char_input, get_selected_item_from_list_state, handle_backspace,
-            reset_current_message_and_input, Pane,
+            reset_current_message_and_input, Window,
         },
         AppState,
     };
@@ -142,7 +142,7 @@ pub mod keys {
     }
 
     fn handle_s_char(app_state: &mut AppState) {
-        app_state.show_selected_files_pane = !app_state.show_selected_files_pane
+        app_state.show_selected_files_window = !app_state.show_selected_files_window
     }
 
     fn handle_c_char(app_state: &mut AppState) {
@@ -162,27 +162,27 @@ pub mod keys {
     }
 
     fn handle_j_char(app_state: &mut AppState) {
-        match app_state.pane {
-            Pane::Files => {
+        match app_state.current_window {
+            Window::Files => {
                 app_state.file_list_state.select_next();
-                refresh_list_state_index_of_directory(app_state, Pane::Files);
+                refresh_list_state_index_of_directory(app_state, Window::Files);
             }
-            Pane::SelectedFiles => {
+            Window::SelectedFiles => {
                 app_state.selected_files_list_state.select_next();
-                refresh_list_state_index_of_directory(app_state, Pane::SelectedFiles);
+                refresh_list_state_index_of_directory(app_state, Window::SelectedFiles);
             }
         }
     }
 
     fn handle_k_char(app_state: &mut AppState) {
-        match app_state.pane {
-            Pane::Files => {
+        match app_state.current_window {
+            Window::Files => {
                 app_state.file_list_state.select_previous();
-                refresh_list_state_index_of_directory(app_state, Pane::Files);
+                refresh_list_state_index_of_directory(app_state, Window::Files);
             }
-            Pane::SelectedFiles => {
+            Window::SelectedFiles => {
                 app_state.selected_files_list_state.select_previous();
-                refresh_list_state_index_of_directory(app_state, Pane::SelectedFiles);
+                refresh_list_state_index_of_directory(app_state, Window::SelectedFiles);
             }
         }
     }
@@ -206,14 +206,17 @@ pub mod keys {
     }
 
     fn handle_one_char(app_state: &mut AppState) {
-        if app_state.pane != Pane::Files && app_state.input_action == InputAction::None {
-            app_state.pane = Pane::Files;
+        if app_state.current_window != Window::Files && app_state.input_action == InputAction::None
+        {
+            app_state.current_window = Window::Files;
         }
     }
 
     fn handle_two_char(app_state: &mut AppState) {
-        if app_state.pane != Pane::SelectedFiles && app_state.input_action == InputAction::None {
-            app_state.pane = Pane::SelectedFiles;
+        if app_state.current_window != Window::SelectedFiles
+            && app_state.input_action == InputAction::None
+        {
+            app_state.current_window = Window::SelectedFiles;
             if app_state.selected_files_list_state.selected() == None
                 && !app_state.selected_files.is_empty()
             {
@@ -223,8 +226,8 @@ pub mod keys {
     }
 
     fn handle_uppercase_d_char(app_state: &mut AppState) {
-        match app_state.pane {
-            Pane::Files => {
+        match app_state.current_window {
+            Window::Files => {
                 let file =
                     get_selected_item_from_list_state(&app_state.file_list_state, &app_state.files);
                 app_state.input_action = InputAction::DeleteFile;
@@ -237,7 +240,7 @@ pub mod keys {
                     )),
                 );
             }
-            Pane::SelectedFiles => {
+            Window::SelectedFiles => {
                 app_state.input_action = InputAction::DeleteFile;
                 send_message_or_panic(
                     &mut app_state.sender_for_ui_message,

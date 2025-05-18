@@ -23,5 +23,5 @@ mainly to
 - Open files with system-provided program
 - Bulk delete files by adding them into the "Selected files" stack
 - Remembers in which directory you went into, for each directory (currently only in-memory, e.g. on an "app-running" basis)
-- Toggle selected files pane
+- Toggle selected files window
 - Cross-platform (not tested on windows lol)

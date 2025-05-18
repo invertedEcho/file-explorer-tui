@@ -17,7 +17,7 @@ pub mod input_action {
             refresh_files_for_working_directory,
         },
         widget::widget::{
-            get_selected_item_from_list_state, reset_current_message_and_input, reset_input, Pane,
+            get_selected_item_from_list_state, reset_current_message_and_input, reset_input, Window,
         },
         AppState,
     };
@@ -44,9 +44,9 @@ pub mod input_action {
         let user_input = &app_state.user_input;
         let is_confirmed = user_input == "y" || user_input == "yes";
         if is_confirmed {
-            match app_state.pane {
-                Pane::Files => delete_currently_selected_file(app_state),
-                Pane::SelectedFiles => delete_selected_files(app_state),
+            match app_state.current_window {
+                Window::Files => delete_currently_selected_file(app_state),
+                Window::SelectedFiles => delete_selected_files(app_state),
             }
         } else {
             reset_current_message_and_input(app_state);

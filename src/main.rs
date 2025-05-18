@@ -13,7 +13,7 @@ use ratatui::{widgets::ListState, DefaultTerminal};
 
 use env::env::get_home_dir;
 use file::file::{get_files_for_dir, sort_file_paths_dirs_first_then_files, File};
-use widget::widget::{draw_widgets_to_frame, Pane};
+use widget::widget::{draw_widgets_to_frame, Window};
 
 mod cmd;
 mod directory_watcher;
@@ -40,14 +40,14 @@ struct AppState {
     files: Vec<File>,
     selected_files: Vec<File>,
     working_directory: String,
-    pane: Pane,
+    current_window: Window,
     user_input: String,
     input_action: InputAction,
     file_list_state: ListState,
     list_state_index_of_directory: HashMap<String, usize>,
     selected_files_list_state: ListState,
     show_cheatsheet: bool,
-    show_selected_files_pane: bool,
+    show_selected_files_window: bool,
     show_hidden_files: bool,
     sender_for_ui_message: Sender<String>,
 }
@@ -87,14 +87,14 @@ fn run(mut terminal: DefaultTerminal) -> Result<()> {
         files: sorted_initial_files,
         selected_files: vec![],
         working_directory: initial_directory.clone(),
-        pane: Pane::Files,
+        current_window: Window::Files,
         user_input: String::from(""),
         input_action: InputAction::None,
         file_list_state: ListState::default(),
         selected_files_list_state: ListState::default(),
         list_state_index_of_directory: HashMap::new(),
         show_cheatsheet: false,
-        show_selected_files_pane: true,
+        show_selected_files_window: true,
         show_hidden_files,
         sender_for_ui_message,
     };
