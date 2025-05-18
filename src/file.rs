@@ -2,6 +2,7 @@ pub mod file {
     use std::{
         cmp::Ordering,
         fs::{self, create_dir},
+        io::Error,
         path::Path,
     };
 
@@ -72,43 +73,51 @@ pub mod file {
         }
     }
 
-    pub fn get_files_for_dir(dir: &String, hidden_files: bool) -> Vec<File> {
-        let read_dir_result = fs::read_dir(dir).expect("Can read from dir");
+    pub fn get_files_for_dir(dir: &String, hidden_files: bool) -> Result<Vec<File>, Error> {
+        let read_dir_result = fs::read_dir(dir);
 
-        let files: Vec<File> = read_dir_result
-            .into_iter()
-            .map(|file| {
-                let dir_entry = file.expect("can unwrap file");
-                let full_path = dir_entry.path().to_string_lossy().to_string();
-                let splitted: Vec<&str> = full_path.split("/").collect();
-                let (last, _) = splitted
-                    .split_last()
-                    .expect("Should be able to split to get relative path");
+        match read_dir_result {
+            Ok(read_dir_result) => {
+                let files: Vec<File> = read_dir_result
+                    .into_iter()
+                    .map(|file| {
+                        let dir_entry = file.expect("can unwrap file");
+                        let full_path = dir_entry.path().to_string_lossy().to_string();
+                        let splitted: Vec<&str> = full_path.split("/").collect();
+                        let (last, _) = splitted
+                            .split_last()
+                            .expect("Should be able to split to get relative path");
 
-                let is_dir = is_path_directory(&full_path);
+                        let is_dir = is_path_directory(&full_path);
 
-                let display_name = if is_dir {
-                    last.to_string() + "/"
+                        let display_name = if is_dir {
+                            last.to_string() + "/"
+                        } else {
+                            last.to_string()
+                        };
+
+                        return File {
+                            display_name,
+                            full_path,
+                            is_dir,
+                        };
+                    })
+                    .collect();
+
+                if hidden_files {
+                    Ok(files)
                 } else {
-                    last.to_string()
-                };
-
-                return File {
-                    display_name,
-                    full_path,
-                    is_dir,
-                };
-            })
-            .collect();
-
-        if hidden_files {
-            files
-        } else {
-            files
-                .iter()
-                .filter(|file| !file.display_name.starts_with("."))
-                .map(|f| f.clone())
-                .collect()
+                    let filtered_files = files
+                        .iter()
+                        .filter(|file| !file.display_name.starts_with("."))
+                        .map(|f| f.clone())
+                        .collect();
+                    Ok(filtered_files)
+                }
+            }
+            Err(error) => {
+                return Err(error);
+            }
         }
     }
 
