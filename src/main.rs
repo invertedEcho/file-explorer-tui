@@ -77,7 +77,8 @@ fn run(mut terminal: DefaultTerminal) -> Result<()> {
 
     let show_hidden_files = false;
 
-    let initial_files = get_files_for_dir(&initial_directory, show_hidden_files);
+    let initial_files = get_files_for_dir(&initial_directory, show_hidden_files)
+        .expect("Can get files from initial dirtectory");
     let sorted_initial_files = sort_file_paths_dirs_first_then_files(&initial_files);
 
     let (sender_for_ui_message, receiver_for_ui_message) = channel();

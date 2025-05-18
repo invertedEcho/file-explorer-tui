@@ -34,13 +34,24 @@ pub mod utils {
                     .get(selected_file_full_path)
                     .or(Some(&0));
 
-                app_state
-                    .file_list_state
-                    .select(index_of_dir_being_entered.copied());
-
                 if is_path_directory(&selected_file.full_path) {
-                    app_state.working_directory = selected_file.full_path.to_string();
-                    refresh_files_for_working_directory(app_state);
+                    let maybe_files =
+                        get_files_for_dir(&selected_file.full_path, app_state.show_hidden_files);
+                    match maybe_files {
+                        Ok(files) => {
+                            app_state
+                                .file_list_state
+                                .select(index_of_dir_being_entered.copied());
+                            app_state.working_directory = selected_file.full_path.to_string();
+                            app_state.files = files;
+                        }
+                        Err(error) => {
+                            send_message_or_panic(
+                                &mut app_state.sender_for_ui_message,
+                                format!("Failed to enter directory: {:?}", error),
+                            );
+                        }
+                    }
                 }
             }
         }
@@ -68,8 +79,10 @@ pub mod utils {
         let delete_result = delete_file(file);
         match delete_result {
             Ok(_) => {
-                app_state.files =
-                    get_files_for_dir(&app_state.working_directory, app_state.show_hidden_files);
+                let new_files =
+                    get_files_for_dir(&app_state.working_directory, app_state.show_hidden_files)
+                        .expect("can get files in same directory when deleting a file");
+                app_state.files = new_files;
             }
             Err(err) => {
                 send_message_or_panic(
@@ -120,8 +133,11 @@ pub mod utils {
         refresh_files_for_working_directory(app_state);
     }
 
+    /// Only use this function if you are sure the new working directory can be read by the current
+    /// user, otherwise this function may panic
     pub fn refresh_files_for_working_directory(app_state: &mut AppState) {
-        let files = get_files_for_dir(&app_state.working_directory, app_state.show_hidden_files);
+        let files = get_files_for_dir(&app_state.working_directory, app_state.show_hidden_files)
+            .expect("can refresh files in new working directory");
         let sorted_files = sort_file_paths_dirs_first_then_files(&files);
         app_state.files = sorted_files;
     }

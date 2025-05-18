@@ -136,7 +136,8 @@ pub mod keys {
 
         app_state.show_hidden_files = !app_state.show_hidden_files;
         let new_files =
-            get_files_for_dir(&app_state.working_directory, app_state.show_hidden_files);
+            get_files_for_dir(&app_state.working_directory, app_state.show_hidden_files)
+                .expect("Can get files in same directory when toggling hidden files");
         app_state.files = sort_file_paths_dirs_first_then_files(&new_files);
     }
 
