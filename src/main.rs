@@ -15,6 +15,7 @@ use env::env::get_home_dir;
 use file::file::{get_files_for_dir, sort_file_paths_dirs_first_then_files, File};
 use widget::widget::{draw_widgets_to_frame, Window};
 
+mod archive;
 mod cmd;
 mod directory_watcher;
 mod env;
@@ -28,7 +29,6 @@ mod widget;
 
 // TODO:
 // fix: truncate filename in deletion message (and other places too)
-// fix: permission errors (navigate into /root)
 //
 // IDEAS:
 // - config support to edit keybinds also interactive ui in tui itself to edit these

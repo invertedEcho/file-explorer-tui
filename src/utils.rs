@@ -1,5 +1,6 @@
 pub mod utils {
     use crate::{
+        archive::archive::{get_files_of_archive, is_path_supported_archive},
         file::file::{
             delete_file, get_files_for_dir, get_parent_dir, is_path_directory,
             sort_file_paths_dirs_first_then_files,
@@ -34,9 +35,11 @@ pub mod utils {
                     .get(selected_file_full_path)
                     .or(Some(&0));
 
-                if is_path_directory(&selected_file.full_path) {
+                if is_path_supported_archive(&selected_file_full_path) {
+                    let maybe_files = get_files_of_archive(&selected_file_full_path);
+                } else if is_path_directory(&selected_file_full_path) {
                     let maybe_files =
-                        get_files_for_dir(&selected_file.full_path, app_state.show_hidden_files);
+                        get_files_for_dir(&selected_file_full_path, app_state.show_hidden_files);
                     match maybe_files {
                         Ok(files) => {
                             app_state

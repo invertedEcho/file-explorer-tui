@@ -137,6 +137,7 @@ pub mod file {
         };
     }
 
+    /// Checks whether the given path is a directory
     pub fn is_path_directory(path: &String) -> bool {
         Path::new(path).is_dir()
     }
