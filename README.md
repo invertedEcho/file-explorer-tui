@@ -1,5 +1,7 @@
 # file-explorer-tui
 
+<img width="1478" height="996" alt="Screenshot_2025-09-27_21-20-31" src="https://github.com/user-attachments/assets/0612cf8a-3954-4651-b8cf-5923be13117d" />
+
 ### How to run
 
 - clone the repo
