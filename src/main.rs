@@ -5,15 +5,15 @@ use std::path::Path;
 use std::sync::mpsc::{channel, Sender};
 
 use color_eyre::Result;
-use directory_watcher::watcher::{handle_notify_watcher_event, setup_directory_watcher};
-use input_action::input_action::InputAction;
-use keys::keys::handle_key_event;
-use logger::logger::setup_logger_handle;
+use directory_watcher::{handle_notify_watcher_event, setup_directory_watcher};
+use input_action::InputAction;
+use keys::handle_key_event;
+use logger::setup_logger_handle;
 use ratatui::{widgets::ListState, DefaultTerminal};
 
-use env::env::get_home_dir;
-use file::file::{get_files_for_dir, sort_file_paths_dirs_first_then_files, File};
-use widget::widget::{draw_widgets_to_frame, Window};
+use env::get_home_dir;
+use file::{get_files_for_dir, sort_file_paths_dirs_first_then_files, File};
+use widget::{draw_widgets_to_frame, Window};
 
 mod cmd;
 mod directory_watcher;
@@ -153,11 +153,8 @@ fn run(mut terminal: DefaultTerminal) -> Result<()> {
 
         // UI Message stuff
         let maybe_result_from_ui_message_receiver = receiver_for_ui_message.try_recv();
-        match maybe_result_from_ui_message_receiver {
-            Ok(result) => {
-                app_state_message.current_message = result;
-            }
-            Err(_) => {}
+        if let Ok(result) = maybe_result_from_ui_message_receiver {
+            app_state_message.current_message = result;
         }
 
         // Directory watcher stuff
